@@ -29,7 +29,10 @@ func TestMain(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	defer av.DeleteSystem(sys.UID, true, false)
+
 	if sys.Name != sysspec.Name {
-		t.Fail()
+		t.FailNow()
 	}
+
 }

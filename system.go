@@ -69,6 +69,31 @@ func (av *AirVantage) CreateSystem(system *System, companyUID string) (*System, 
 	return sys, nil
 }
 
+// DeleteSystem deletes a system and optionally its gateway and subscription.
+func (av *AirVantage) DeleteSystem(uid string, deleteGateway, deleteSubscription bool) error {
+
+	url := av.URL("/systems/%s?deleteGateway=%v&deleteSubscription=%v", uid, deleteGateway, deleteSubscription)
+
+	if av.Debug {
+		av.log.Println("DELETE", url)
+	}
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := av.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("%s: %s", url, resp.Status)
+	}
+
+	return nil
+}
+
 // FindSystems is the generic method to find one or more systems.
 // Parameters:
 // - criteria is a map of field->value to filter the results
