@@ -14,56 +14,46 @@ import (
 
 // A System descriptor.
 type System struct {
-	UID                 string `json:"uid,omitempty"`
-	Name                string
-	Type                string                 `json:",omitempty"`
-	State               string                 `json:",omitempty"` // Deprecated
-	LifeCycleState      string                 `json:",omitempty"`
-	ActivityState       string                 `json:",omitempty"`
-	CommStatus          string                 `json:",omitempty"`
-	CreationDate        AVTime                 `json:",omitempty"`
-	ActivationDate      AVTime                 `json:",omitempty"`
-	LastStateChangeDate AVTime                 `json:",omitempty"`
-	LastCommDate        AVTime                 `json:",omitempty"`
-	SyncStatus          string                 `json:",omitempty"`
-	LastSyncDate        AVTime                 `json:",omitempty"`
-	Labels              []string               `json:",omitempty"`
-	Gateway             Gateway                `json:",omitempty"`
-	Subscription        map[string]string      `json:",omitempty"`
-	Applications        []Application          `json:",omitempty"`
-	Metadata            map[string]string      `json:",omitempty"`
-	Data                map[string]interface{} `json:",omitempty"`
-	DataUsage           map[string]interface{} `json:",omitempty"`
-	Offer               map[string]interface{} `json:",omitempty"`
-	Communication       struct {
-		MSCI struct {
-			Host     string
-			User     string
-			Password string
-		} `json:"msci,omitempty"`
-		M3DA struct {
-			Password             string
-			RegistrationPassword string
-		} `json:"m3da,omitempty"`
-		REST struct {
-			Password string
-		} `json:"rest,omitempty"`
-		MQTT struct {
-			Password string
-		} `json:"mqtt,omitempty"`
-	} `json:",omitempty"`
-	Heatbeat     map[string]interface{}   `json:",omitempty"`
-	StatusReport map[string]string        `json:",omitempty"`
-	Reports      []map[string]interface{} `json:",omitempty"`
+	UID                 string                   `json:"uid,omitempty"`
+	Name                string                   `json:"name"`
+	Type                string                   `json:"type,omitempty"`
+	State               string                   `json:"state,omitempty"` // Deprecated
+	LifeCycleState      string                   `json:"lifeCycleState,omitempty"`
+	ActivityState       string                   `json:"activityState,omitempty"`
+	CommStatus          string                   `json:"comStatus,omitempty"`
+	CreationDate        AVTime                   `json:"creationDate,omitempty"`
+	ActivationDate      AVTime                   `json:"activationDate,omitempty"`
+	LastStateChangeDate AVTime                   `json:"lastStateChangeDate,omitempty"`
+	LastCommDate        AVTime                   `json:"lastCommDate,omitempty"`
+	SyncStatus          string                   `json:"syncStatus,omitempty"`
+	LastSyncDate        AVTime                   `json:"lastSyncDate,omitempty"`
+	Labels              []string                 `json:"labels,omitempty"`
+	Gateway             Gateway                  `json:"gateway,omitempty"`
+	Subscription        map[string]string        `json:"subscription,omitempty"`
+	Applications        []Application            `json:"applications,omitempty"`
+	Metadata            map[string]string        `json:"metadata,omitempty"`
+	Data                map[string]interface{}   `json:"data,omitempty"`
+	DataUsage           map[string]interface{}   `json:"dataUsage,omitempty"`
+	Offer               map[string]interface{}   `json:"offer,omitempty"`
+	Communication       Communication            `json:"communication,omitempty"`
+	Heatbeat            map[string]interface{}   `json:"heartbeat,omitempty"`
+	StatusReport        map[string]string        `json:"statusReport,omitempty"`
+	Reports             []map[string]interface{} `json:"reports,omitempty"`
 }
 
 // CreateSystem creates a new System on AirVantage. It returns a new System struct
 // with updated information. companyUID is an optional argument to change the company context.
+// Required fields in System: name, gateway
 func (av *AirVantage) CreateSystem(system *System, companyUID string) (*System, error) {
+
 	url := av.URL("/systems?company=%s", companyUID)
 	js, err := json.Marshal(system)
 	if err != nil {
 		return nil, err
+	}
+
+	if av.Debug {
+		av.log.Printf("Post %s\n%s\n", url, string(js))
 	}
 
 	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))

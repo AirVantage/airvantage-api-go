@@ -59,7 +59,7 @@ func (av *AirVantage) get(format string, a ...interface{}) (*http.Response, erro
 
 type apiError struct {
 	Error           string
-	ErrorParameters string
+	ErrorParameters []string
 }
 
 // parseResponse is the standard way to handle HTTP responses from AirVantage.

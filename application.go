@@ -7,20 +7,20 @@ import (
 
 // An Application descriptor.
 type Application struct {
-	UID                string `json:"uid,omitempty"`
-	Name               string
-	Revision           string
-	Type               string                 `json:",omitempty"`
-	Category           string                 `json:",omitempty"`
-	State              string                 `json:",omitempty"`
-	Released           AVTime                 `json:",omitempty"`
-	Published          AVTime                 `json:",omitempty"`
-	Deprecated         AVTime                 `json:",omitempty"`
-	IsReference        bool                   `json:",omitempty"`
-	IsPublic           bool                   `json:",omitempty"`
-	Labels             []string               `json:",omitempty"`
-	ApplicationManager string                 `json:",omitempty"`
-	Owner              map[string]interface{} `json:",omitempty"` // TODO: real impl.
+	UID                string                 `json:"uid,omitempty"`
+	Name               string                 `json:"name"`
+	Revision           string                 `json:"revision"`
+	Type               string                 `json:"type,omitempty"`
+	Category           string                 `json:"category,omitempty"`
+	State              string                 `json:"state,omitempty"`
+	Released           AVTime                 `json:"released,omitempty"`
+	Published          AVTime                 `json:"published,omitempty"`
+	Deprecated         AVTime                 `json:"deprecated,omitempty"`
+	IsReference        bool                   `json:"isReference,omitempty"`
+	IsPublic           bool                   `json:"isPublic,omitempty"`
+	Labels             []string               `json:"labels,omitempty"`
+	ApplicationManager string                 `json:"applicationManager,omitempty"`
+	Owner              map[string]interface{} `json:"owner,omitempty"` // TODO: real impl.
 }
 
 type appResponse struct {

@@ -4,11 +4,11 @@ package airvantage
 type Gateway struct {
 	UID          string   `json:"uid"`
 	IMEI         string   `json:"imei,omitempty"`
-	MacAddress   string   `json:",omitempty"`
-	SerialNumber string   `json:",omitempty"`
-	Type         string   `json:",omitempty"`
-	Metadata     Metadata `json:",omitempty"`
-	Labels       []string `json:",omitempty"`
-	CreationDate AVTime   `json:",omitempty"`
-	State        string   `json:",omitempty"`
+	MacAddress   string   `json:"macAddress,omitempty"`
+	SerialNumber string   `json:"serialNumber,omitempty"`
+	Type         string   `json:"type,omitempty"`
+	Metadata     Metadata `json:"metadata,omitempty"`
+	Labels       []string `json:"labels,omitempty"`
+	CreationDate AVTime   `json:"creationDate,omitempty"`
+	State        string   `json:"state,omitempty"`
 }

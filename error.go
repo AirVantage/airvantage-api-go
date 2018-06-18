@@ -2,6 +2,7 @@ package airvantage
 
 import (
 	"fmt"
+	"strings"
 )
 
 // AvError represents errors returned by the API.
@@ -11,8 +12,9 @@ type AvError struct {
 	Parameters string
 }
 
-func avError(action, code, parameters string) error {
-	return &AvError{Path: action, Code: code, Parameters: parameters}
+func avError(action, code string, parameters []string) error {
+	params := strings.Join(parameters, ", ")
+	return &AvError{Path: action, Code: code, Parameters: params}
 }
 
 func (e *AvError) Error() string {
