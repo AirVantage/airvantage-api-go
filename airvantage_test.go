@@ -7,7 +7,7 @@ import (
 
 // The tests need to be sequential.
 func TestMain(t *testing.T) {
-	av, err := NewClient("https://qa.airvantage.io",
+	av, err := NewClient("qa.airvantage.io",
 		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
 		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
 	if err != nil {
@@ -24,7 +24,7 @@ func TestMain(t *testing.T) {
 			Type: "api-gateway",
 		},
 	}
-	sys, err := av.CreateSystem(&sysspec, "")
+	sys, err := av.CreateSystem(&sysspec)
 	if err != nil {
 		t.Fatal(err)
 	}

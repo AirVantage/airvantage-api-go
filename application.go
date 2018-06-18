@@ -2,7 +2,6 @@ package airvantage
 
 import (
 	"fmt"
-	"net/url"
 )
 
 // An Application descriptor.
@@ -32,8 +31,7 @@ type appResponse struct {
 // FindAppUID looks for an application using its name and revision,
 // checks if it is in the published state, and returns its UID.
 func (av *AirVantage) FindAppUID(name, rev string) (string, error) {
-	resp, err := av.get("/applications?name=%s&revision=%s&fields=uid,state&size=2",
-		url.QueryEscape(name), rev)
+	resp, err := av.get("applications", "name", name, "revision", rev, "fields", "uid,state", "size", 2)
 	if err != nil {
 		return "", err
 	}

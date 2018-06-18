@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -20,25 +21,33 @@ var defaultLogger = log.New(os.Stderr, "AV", log.LstdFlags)
 
 // AirVantage API client using oAuth2
 type AirVantage struct {
-	client *http.Client
-	Debug  bool
-	host   string
-	log    *log.Logger
+	client     *http.Client
+	CompanyUID string
+	Debug      bool
+	baseURL    *url.URL
+	log        *log.Logger
 }
 
 // NewClient logins to AirVantage an returns a new API client.
 func NewClient(host, clientID, clientSecret, login, password string) (*AirVantage, error) {
 
-	if !strings.HasPrefix(host, "http") {
-		host = "https://" + host
+	scheme := "https"
+	if strings.HasPrefix(host, "http://") {
+		scheme = "http"
+		host = strings.TrimPrefix(host, "http://")
+	} else {
+		host = strings.TrimPrefix(host, "https://")
 	}
+
+	//baseURL := &url.URL{Host: host, Scheme: scheme, Path: "/api/v1"}
+	baseURL := &url.URL{Host: host, Scheme: scheme, Path: "/api/oauth/"}
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Endpoint: oauth2.Endpoint{
-			TokenURL: host + "/api/oauth/token",
-			AuthURL:  host + "/api/oauth/auth",
+			TokenURL: baseURL.ResolveReference(&url.URL{Path: "token"}).String(),
+			AuthURL:  baseURL.ResolveReference(&url.URL{Path: "auth"}).String(),
 		},
 	}
 
@@ -49,7 +58,9 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 		return nil, err
 	}
 
-	return &AirVantage{client: conf.Client(ctx, token), host: host, log: defaultLogger}, nil
+	baseURL.Path = "/api/v1/"
+
+	return &AirVantage{client: conf.Client(ctx, token), baseURL: baseURL, log: defaultLogger}, nil
 }
 
 // get with smart URL formatting.
@@ -113,6 +124,21 @@ func (av *AirVantage) SetTimeout(timeout time.Duration) {
 }
 
 // URL builds a URL with the right host and prefix for API calls.
-func (av *AirVantage) URL(format string, a ...interface{}) string {
-	return fmt.Sprintf(av.host+"/api/v1"+format, a...)
+func (av *AirVantage) URL(path string, a ...interface{}) string {
+	v := url.Values{}
+
+	if av.CompanyUID != "" {
+		v.Set("company", av.CompanyUID)
+	}
+
+	for i := 0; i < len(a); i += 2 {
+		if aStr, ok := a[i+1].(string); ok {
+			v.Add(a[i].(string), aStr)
+		} else {
+			v.Add(a[i].(string), fmt.Sprintf("%v", a[i+1]))
+		}
+	}
+
+	return av.baseURL.ResolveReference(&url.URL{Path: path, RawQuery: v.Encode()}).String()
+
 }

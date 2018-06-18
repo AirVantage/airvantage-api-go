@@ -41,12 +41,47 @@ type System struct {
 	Reports             []map[string]interface{} `json:"reports,omitempty"`
 }
 
-// CreateSystem creates a new System on AirVantage. It returns a new System struct
-// with updated information. companyUID is an optional argument to change the company context.
-// Required fields in System: name, gateway
-func (av *AirVantage) CreateSystem(system *System, companyUID string) (*System, error) {
+// ApplyTemplateByUID applies the settings of a given template on a list of systems.
+func (av *AirVantage) ApplyTemplateByUID(templateName string, systemUIDs []string) (*Operation, error) {
 
-	url := av.URL("/systems?company=%s", companyUID)
+	reqMsg := struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		Template string `json:"templateName"`
+	}{Template: templateName}
+	reqMsg.Systems.UIDs = systemUIDs
+
+	js, err := json.Marshal(&reqMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	url := av.URL("/operations/systems/settings")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return nil, err
+	}
+
+	op := &Operation{}
+	if err = av.parseResponse(resp, op); err != nil {
+		return nil, err
+	}
+
+	return op, nil
+}
+
+// CreateSystem creates a new System on AirVantage. It returns a new System struct
+// with updated information.
+// Required fields in System: name, gateway
+func (av *AirVantage) CreateSystem(system *System) (*System, error) {
+
+	url := av.URL("systems")
 	js, err := json.Marshal(system)
 	if err != nil {
 		return nil, err
@@ -72,7 +107,7 @@ func (av *AirVantage) CreateSystem(system *System, companyUID string) (*System, 
 // DeleteSystem deletes a system and optionally its gateway and subscription.
 func (av *AirVantage) DeleteSystem(uid string, deleteGateway, deleteSubscription bool) error {
 
-	url := av.URL("/systems/%s?deleteGateway=%v&deleteSubscription=%v", uid, deleteGateway, deleteSubscription)
+	url := av.URL("systems/"+uid, "deleteGateway", deleteGateway, "deleteSubscription", deleteSubscription)
 
 	if av.Debug {
 		av.log.Println("DELETE", url)
@@ -108,7 +143,7 @@ func (av *AirVantage) FindSystems(criteria url.Values, fields, orderBy string) (
 		criteria.Set("orderBy", orderBy)
 	}
 
-	resp, err := av.get("/systems?%s", criteria.Encode())
+	resp, err := av.get("systems?" + criteria.Encode())
 	if err != nil {
 		return nil, err
 	}
@@ -124,14 +159,10 @@ func (av *AirVantage) FindSystems(criteria url.Values, fields, orderBy string) (
 // FindSystemByName returns the first System owning the given name.
 // Parameters:
 // - fields: a comma-seperated list of fields to return (optional)
-// - companyUID: the company context to use (optional)
-func (av *AirVantage) FindSystemByName(name, fields, companyUID string) (*System, error) {
+func (av *AirVantage) FindSystemByName(name, fields string) (*System, error) {
 	criteria := url.Values{}
 	criteria.Set("name", name)
 	criteria.Set("size", "1")
-	if companyUID != "" {
-		criteria.Set("company", companyUID)
-	}
 
 	systems, err := av.FindSystems(criteria, fields, "")
 	if err != nil || len(systems) == 0 {
@@ -144,14 +175,10 @@ func (av *AirVantage) FindSystemByName(name, fields, companyUID string) (*System
 // FindSystemByUID returns the System owning the given UID.
 // Parameters:
 // - fields: a comma-seperated list of fields to return (optional)
-// - companyUID: the company context to use (optional)
-func (av *AirVantage) FindSystemByUID(uid, fields, companyUID string) (*System, error) {
+func (av *AirVantage) FindSystemByUID(uid, fields string) (*System, error) {
 	criteria := url.Values{}
 	criteria.Set("uid", uid)
 	criteria.Set("size", "1")
-	if companyUID != "" {
-		criteria.Set("company", companyUID)
-	}
 
 	systems, err := av.FindSystems(criteria, fields, "")
 	if err != nil || len(systems) == 0 {
@@ -182,7 +209,7 @@ func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, t
 	js := fmt.Sprintf(`{"defaultApplications":["%s"],"defaultState":"READY","defaultType":"%s"}`, appID, systemType)
 
 	// Import request
-	url := av.URL("/operations/systems/import")
+	url := av.URL("operations/systems/import")
 	var b bytes.Buffer
 	multi := multipart.NewWriter(&b)
 

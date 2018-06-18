@@ -105,7 +105,7 @@ func (av *AirVantage) AwaitOperation(op *Operation) error {
 
 // GetOperation retrieves details about an Operation.
 func (av *AirVantage) GetOperation(uid string) (*Operation, error) {
-	resp, err := av.get("/operations/" + uid)
+	resp, err := av.get("operations/" + uid)
 	if err != nil {
 		return nil, err
 	}
