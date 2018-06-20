@@ -22,12 +22,6 @@ type Application struct {
 	Owner              map[string]interface{} `json:"owner,omitempty"` // TODO: real impl.
 }
 
-type appResponse struct {
-	Count int
-	Size  int
-	Items []Application
-}
-
 // FindAppUID looks for an application using its name and revision,
 // checks if it is in the published state, and returns its UID.
 func (av *AirVantage) FindAppUID(name, rev string) (string, error) {
@@ -36,12 +30,12 @@ func (av *AirVantage) FindAppUID(name, rev string) (string, error) {
 		return "", err
 	}
 
-	res := appResponse{}
+	res := struct{ Items []Application }{}
 	if err = av.parseResponse(resp, &res); err != nil {
 		return "", err
 	}
 
-	found := res.Size
+	found := len(res.Items)
 
 	if found == 0 {
 		return "", fmt.Errorf("no application matching '%s'", name)

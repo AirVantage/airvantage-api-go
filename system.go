@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 // A System descriptor.
@@ -41,6 +42,16 @@ type System struct {
 	Reports             []map[string]interface{} `json:"reports,omitempty"`
 }
 
+// A Datapoint retrieved from a System.
+type Datapoint struct {
+	ts AVTime
+	v  interface{}
+}
+
+// DataAggregate is used to retrieved data from many devices.
+// The first string is the systemUID, the second is the data name.
+type DataAggregate map[string]map[string][]Datapoint
+
 // ApplyTemplateByUID applies the settings of a given template on a list of systems.
 func (av *AirVantage) ApplyTemplateByUID(templateName string, systemUIDs []string) (*Operation, error) {
 
@@ -51,6 +62,41 @@ func (av *AirVantage) ApplyTemplateByUID(templateName string, systemUIDs []strin
 		Template string `json:"templateName"`
 	}{Template: templateName}
 	reqMsg.Systems.UIDs = systemUIDs
+
+	js, err := json.Marshal(&reqMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	url := av.URL("/operations/systems/settings")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return nil, err
+	}
+
+	op := &Operation{}
+	if err = av.parseResponse(resp, op); err != nil {
+		return nil, err
+	}
+
+	return op, nil
+}
+
+// ApplyTemplateByLabels applies a template on all the systems with given labels.
+func (av *AirVantage) ApplyTemplateByLabels(templateName string, labels []string) (*Operation, error) {
+
+	reqMsg := struct {
+		Systems struct {
+			Labels []string `json:"labels"`
+		} `json:"systems"`
+		Template string `json:"templateName"`
+	}{Template: templateName}
+	reqMsg.Systems.Labels = labels
 
 	js, err := json.Marshal(&reqMsg)
 	if err != nil {
@@ -129,11 +175,30 @@ func (av *AirVantage) DeleteSystem(uid string, deleteGateway, deleteSubscription
 	return nil
 }
 
+// ExportDataFromDevices downloads a DataAggregate of all the devices for a given company,
+// in the given time interval. Optionally you can select the data points to return by
+// setting `fields`, a comma-separated list of data IDs.
+func (av *AirVantage) ExportDataFromDevices(companyUID, fields string, from, to time.Time) (DataAggregate, error) {
+
+	resp, err := av.get("systems/data/fleet", "targetIds", companyUID, "dataIds", fields,
+		"from", NewAVTime(from), "to", NewAVTime(to))
+	if err != nil {
+		return nil, err
+	}
+
+	data := DataAggregate{}
+	if err = av.parseResponse(resp, &data); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // FindSystems is the generic method to find one or more systems.
 // Parameters:
 // - criteria is a map of field->value to filter the results
-// - fields is a comma-seperated list of fields to return (optional)
-// - orderBy is a comma-seperated list of fields to order the results (optional)
+// - fields is a comma-separated list of fields to return (optional)
+// - orderBy is a comma-separated list of fields to order the results (optional)
 // You can limit the number of results (100 by default) by adding a criteria 'size'.
 func (av *AirVantage) FindSystems(criteria url.Values, fields, orderBy string) ([]System, error) {
 	if fields != "" {
@@ -158,7 +223,7 @@ func (av *AirVantage) FindSystems(criteria url.Values, fields, orderBy string) (
 
 // FindSystemByName returns the first System owning the given name.
 // Parameters:
-// - fields: a comma-seperated list of fields to return (optional)
+// - fields: a comma-separated list of fields to return (optional)
 func (av *AirVantage) FindSystemByName(name, fields string) (*System, error) {
 	criteria := url.Values{}
 	criteria.Set("name", name)
@@ -174,7 +239,7 @@ func (av *AirVantage) FindSystemByName(name, fields string) (*System, error) {
 
 // FindSystemByUID returns the System owning the given UID.
 // Parameters:
-// - fields: a comma-seperated list of fields to return (optional)
+// - fields: a comma-separated list of fields to return (optional)
 func (av *AirVantage) FindSystemByUID(uid, fields string) (*System, error) {
 	criteria := url.Values{}
 	criteria.Set("uid", uid)
@@ -186,6 +251,23 @@ func (av *AirVantage) FindSystemByUID(uid, fields string) (*System, error) {
 	}
 
 	return &systems[0], err
+}
+
+// GetLatestData returns the latests data points on a device, without querying it. You can
+// optionally select which data to return by specifying a comma-separated list of fields.
+func (av *AirVantage) GetLatestData(systemUID, fields string) (map[string]string, error) {
+
+	resp, err := av.get("systems/"+systemUID+"/data", "ids", fields)
+	if err != nil {
+		return nil, err
+	}
+
+	res := Metadata{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // ImportSystems create a batch of systems, with serial numbers ranging from `from` to `to`.
