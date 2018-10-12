@@ -55,3 +55,21 @@ func (av *AirVantage) FindAppUID(name, rev string) (string, error) {
 
 	return app.UID, nil
 }
+
+// FindAppByTypeRev retrieves an application by type and revision
+func (av *AirVantage) FindAppByTypeRev(apptype, apprev string) (*Application, error) {
+	resp, err := av.get("applications", "type", apptype, "revision", apprev)
+	if err != nil {
+		return nil, err
+	}
+
+	res := struct{ Items []Application }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return nil, err
+	}
+
+	if len(res.Items) == 0 {
+		return nil, nil
+	}
+	return &res.Items[0], nil
+}
