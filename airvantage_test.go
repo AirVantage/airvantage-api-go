@@ -6,7 +6,7 @@ import (
 )
 
 // The tests need to be sequential.
-func TestMain(t *testing.T) {
+func TestSystem(t *testing.T) {
 	av, err := NewClient("qa.airvantage.io",
 		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
 		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
@@ -34,5 +34,47 @@ func TestMain(t *testing.T) {
 	if sys.Name != sysspec.Name {
 		t.FailNow()
 	}
+}
 
+func TestFindAppByTypeRev(t *testing.T) {
+
+	av, err := NewClient("https://qa.airvantage.io",
+		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
+		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	av.Debug = true
+
+	app, err := av.FindAppByTypeRev("test-mqtt", "0.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if app == nil {
+		t.Fatal("app not found")
+	}
+
+	t.Logf("Found: %+v", app)
+}
+
+func TestInstallApp(t *testing.T) {
+
+	av, err := NewClient("https://qa.airvantage.io",
+		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
+		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	av.Debug = true
+	//av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
+
+	op, err := av.InstallApplication("c634dd2234714578ad286c04e038f5b2", "42be9f3a82d94da5bc3d44af67138092")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Install op: %+v", op)
 }

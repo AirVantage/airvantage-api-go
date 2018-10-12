@@ -344,3 +344,40 @@ func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, t
 
 	return nil
 }
+
+// InstallApplication installs or upgrades an application on a system
+func (av *AirVantage) InstallApplication(appUID, systemUID string) (*Operation, error) {
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		Application string `json:"application"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+	body.Application = appUID
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return nil, err
+	}
+
+	url := av.URL("operations/systems/applications/install")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return nil, err
+	}
+
+	op := &Operation{}
+	if err = av.parseResponse(resp, op); err != nil {
+		return nil, err
+	}
+
+	return op, nil
+}
