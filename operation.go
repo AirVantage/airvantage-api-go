@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// ErrOperationExpired is returned when an operations timeouts.
-var ErrOperationExpired = errors.New("operation expired")
+// ErrWaitFinishedOperationTimeout is returned when waiting too long for a finished operation.
+var ErrWaitFinishedOperationTimeout = errors.New("wait.operation.timeout")
 
 type OperationCounters struct {
 	BeingCancelled int
@@ -69,38 +69,29 @@ type Operation struct {
 	Counters OperationCounters
 }
 
-// NewOperation creates a new, empty Operation with the given ID.
-func NewOperation(uid string) *Operation {
-	return &Operation{UID: uid}
-}
-
 // AwaitOperation blocks until the operation is finished or expired.
-// When it returns, the operation's details are updated.
-func (av *AirVantage) AwaitOperation(op *Operation) error {
+func (av *AirVantage) AwaitOperation(opUID string, timeout time.Duration) (*Operation, error) {
+	start := time.Now()
 	for {
-		newOp, err := av.GetOperation(op.UID)
+		op, err := av.GetOperation(opUID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if av.Debug {
-			av.log.Printf("DBG operation %+v\n", newOp)
+			av.log.Printf("DBG operation %+v\n", op)
 		}
 
-		if newOp.State == "FINISHED" {
-			*op = *newOp
-			break
+		if op.State == "FINISHED" {
+			return op, nil
 		}
 
-		if time.Now().After(newOp.Timeout.Time()) {
-			*op = *newOp
-			return ErrOperationExpired
+		if time.Now().Sub(start) > timeout {
+			return op, ErrWaitFinishedOperationTimeout
 		}
 
 		time.Sleep(5 * time.Second)
 	}
-
-	return nil
 }
 
 // GetOperation retrieves details about an Operation.

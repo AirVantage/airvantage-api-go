@@ -3,6 +3,7 @@ package airvantage
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 // The tests need to be sequential.
@@ -69,13 +70,19 @@ func TestInstallApp(t *testing.T) {
 	}
 
 	av.Debug = true
-	//av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
+	av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
 
-	op, err := av.InstallApplication("c634dd2234714578ad286c04e038f5b2", "42be9f3a82d94da5bc3d44af67138092")
+	opUID, err := av.InstallApplication("c634dd2234714578ad286c04e038f5b2", "42be9f3a82d94da5bc3d44af67138092")
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("Install op UID: %+v", opUID)
 
+	op, err := av.AwaitOperation(opUID, 10*time.Second)
+	if err != ErrWaitFinishedOperationTimeout {
+		// timeout because the operation cannot be finished
+		t.Fatalf("expected: %v, got: %v", ErrWaitFinishedOperationTimeout, err)
+	}
 	t.Logf("Install op: %+v", op)
 }
 

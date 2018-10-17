@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -328,13 +327,12 @@ func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, t
 		return err
 	}
 
-	op := NewOperation(res.Operation)
-
 	// Waiting for operation to finish
 	if av.Debug {
-		av.log.Println("waiting for systems import operation", op.UID)
+		av.log.Println("waiting for systems import operation", res.Operation)
 	}
-	if err = av.AwaitOperation(op); err != nil {
+	op, err := av.AwaitOperation(res.Operation, 1*time.Minute)
+	if err != nil {
 		return err
 	}
 
@@ -376,9 +374,9 @@ func (av *AirVantage) InstallApplication(appUID, systemUID string) (string, erro
 	}
 	av.log.Printf("POST %s\n%s\n", url, string(js))
 
-	payload, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
 		return "", err
 	}
-	return string(payload), nil
+	return string(res.Operation), nil
 }
