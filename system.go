@@ -240,17 +240,19 @@ func (av *AirVantage) FindSystemByName(name, fields string) (*System, error) {
 // FindSystemByUID returns the System owning the given UID.
 // Parameters:
 // - fields: a comma-separated list of fields to return (optional)
-func (av *AirVantage) FindSystemByUID(uid, fields string) (*System, error) {
-	criteria := url.Values{}
-	criteria.Set("uid", uid)
-	criteria.Set("size", "1")
+func (av *AirVantage) FindSystemByUID(UID string) (*System, error) {
 
-	systems, err := av.FindSystems(criteria, fields, "")
-	if err != nil || len(systems) == 0 {
+	resp, err := av.get("systems/" + UID)
+	if err != nil {
 		return nil, err
 	}
 
-	return &systems[0], err
+	res := System{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
 }
 
 // GetLatestData returns the latests data points on a device, without querying it. You can

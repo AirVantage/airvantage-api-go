@@ -29,8 +29,13 @@ func TestSystem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	defer av.DeleteSystem(sys.UID, true, false)
+
+	sys, err = av.FindSystemByUID(sys.UID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Found: %+v", sys)
 
 	if sys.Name != sysspec.Name {
 		t.FailNow()
