@@ -78,3 +78,23 @@ func TestInstallApp(t *testing.T) {
 
 	t.Logf("Install op: %+v", op)
 }
+
+func TestGetOperation(t *testing.T) {
+
+	av, err := NewClient("https://qa.airvantage.io",
+		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
+		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	av.Debug = true
+	//av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
+
+	op, err := av.GetOperation("46be2ae142dc4fd993819a38b2937e2d")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Op: %+v", op)
+}

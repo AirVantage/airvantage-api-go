@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -346,7 +347,7 @@ func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, t
 }
 
 // InstallApplication installs or upgrades an application on a system
-func (av *AirVantage) InstallApplication(appUID, systemUID string) (*Operation, error) {
+func (av *AirVantage) InstallApplication(appUID, systemUID string) (string, error) {
 
 	type jsonBody struct {
 		Systems struct {
@@ -360,7 +361,7 @@ func (av *AirVantage) InstallApplication(appUID, systemUID string) (*Operation, 
 
 	js, err := json.Marshal(&body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	url := av.URL("operations/systems/applications/install")
@@ -371,13 +372,13 @@ func (av *AirVantage) InstallApplication(appUID, systemUID string) (*Operation, 
 
 	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	av.log.Printf("POST %s\n%s\n", url, string(js))
 
-	op := &Operation{}
-	if err = av.parseResponse(resp, op); err != nil {
-		return nil, err
+	payload, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
 	}
-
-	return op, nil
+	return string(payload), nil
 }
