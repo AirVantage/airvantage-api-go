@@ -379,7 +379,6 @@ func (av *AirVantage) InstallApplication(appUID, systemUID string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	av.log.Printf("POST %s\n%s\n", url, string(js))
 
 	res := struct{ Operation string }{}
 	if err = av.parseResponse(resp, &res); err != nil {
