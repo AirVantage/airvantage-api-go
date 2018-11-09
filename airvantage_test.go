@@ -110,3 +110,23 @@ func TestGetOperation(t *testing.T) {
 
 	t.Logf("Op: %+v", op)
 }
+
+func TestGetLatestData(t *testing.T) {
+
+	av, err := NewClient("https://qa.airvantage.io",
+		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
+		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	av.Debug = true
+	//av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
+
+	res, err := av.GetLatestData("5bdacf411b5d4603a6d13f099a9ca5ba", "DM.SW.VER")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("res: %+v", res)
+}

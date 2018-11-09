@@ -255,16 +255,21 @@ func (av *AirVantage) FindSystemByUID(UID string) (*System, error) {
 	return &res, nil
 }
 
-// GetLatestData returns the latests data points on a device, without querying it. You can
-// optionally select which data to return by specifying a comma-separated list of fields.
-func (av *AirVantage) GetLatestData(systemUID, fields string) (map[string]string, error) {
+type TsValue struct {
+	Value     interface{} `json:"value"`
+	Timestamp AVTime      `json:"timestamp"`
+}
 
-	resp, err := av.get("systems/"+systemUID+"/data", "ids", fields)
+// GetLatestData returns the latests data points on a device, without querying it. You can
+// optionally select which data to return by specifying a comma-separated list of data IDs.
+func (av *AirVantage) GetLatestData(systemUID, dataIDs string) (map[string][]TsValue, error) {
+
+	resp, err := av.get("systems/"+systemUID+"/data", "ids", dataIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	res := Metadata{}
+	res := map[string][]TsValue{}
 	if err = av.parseResponse(resp, &res); err != nil {
 		return nil, err
 	}
