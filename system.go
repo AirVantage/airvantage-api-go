@@ -208,12 +208,14 @@ func (av *AirVantage) FindSystems(criteria url.Values, fields, orderBy string) (
 		criteria.Set("orderBy", orderBy)
 	}
 
-	resp, err := av.get("systems?" + criteria.Encode())
+	resp, err := av.getWithParams("systems", criteria)
 	if err != nil {
 		return nil, err
 	}
 
-	var page struct{ Items []System }
+	var page struct {
+		Items []System `json:"items"`
+	}
 	if err = av.parseResponse(resp, &page); err != nil {
 		return nil, err
 	}
@@ -370,6 +372,46 @@ func (av *AirVantage) InstallApplication(appUID, systemUID string) (string, erro
 	}
 
 	url := av.URL("operations/systems/applications/install")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
+// RetrieveData launch an operation to read the given paths on the system
+func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID string) (string, error) {
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		Data     []string `json:"data"`
+		Protocol string   `json:"protocol"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+	body.Data = paths
+	if protocol != "" {
+		body.Protocol = protocol
+	}
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	url := av.URL("operations/systems/data/retrieve")
 
 	if av.Debug {
 		av.log.Printf("POST %s\n%s\n", url, string(js))

@@ -1,8 +1,11 @@
 package airvantage
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/url"
 	"time"
 )
 
@@ -106,5 +109,49 @@ func (av *AirVantage) GetOperation(uid string) (*Operation, error) {
 		return nil, err
 	}
 
+	return op, nil
+}
+
+// FindOperations is the generic method to find one or more systems.
+// Parameters:
+// - criteria is a map of field->value to filter the results
+// - fields is a comma-separated list of fields to return (optional)
+// - orderBy is a comma-separated list of fields to order the results (optional)
+// You can limit the number of results (100 by default) by adding a criteria 'size'.
+func (av *AirVantage) FindOperations(criteria url.Values, fields, orderBy string) ([]Operation, error) {
+	if fields != "" {
+		criteria.Set("fields", fields)
+	}
+	if orderBy != "" {
+		criteria.Set("orderBy", orderBy)
+	}
+
+	resp, err := av.getWithParams("operations", criteria)
+	if err != nil {
+		return nil, err
+	}
+
+	var page struct {
+		Items []Operation `json:"items"`
+	}
+	if err = av.parseResponse(resp, &page); err != nil {
+		return nil, err
+	}
+
+	return page.Items, nil
+}
+
+// CancelOperation cancels the operation with the given UID.
+func (av *AirVantage) CancelOperation(opUID string) (*Operation, error) {
+
+	resp, err := av.client.Post(av.URL(fmt.Sprintf("operations/%s/cancel", opUID)), "application/json", bytes.NewReader([]byte{}))
+	if err != nil {
+		return nil, err
+	}
+
+	op := &Operation{}
+	if err = av.parseResponse(resp, &op); err != nil {
+		return nil, err
+	}
 	return op, nil
 }

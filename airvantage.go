@@ -68,6 +68,11 @@ func (av *AirVantage) get(format string, a ...interface{}) (*http.Response, erro
 	return av.client.Get(av.URL(format, a...))
 }
 
+// get with query parameters
+func (av *AirVantage) getWithParams(path string, params url.Values) (*http.Response, error) {
+	return av.client.Get(av.baseURL.ResolveReference(&url.URL{Path: path, RawQuery: params.Encode()}).String())
+}
+
 type apiError struct {
 	Error           string
 	ErrorParameters []string
@@ -85,7 +90,7 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{})
 		}
 
 		if av.Debug {
-			av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL.Path, string(body))
+			av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
 		}
 
 		if len(body) == 0 {
