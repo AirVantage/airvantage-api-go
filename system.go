@@ -279,6 +279,37 @@ func (av *AirVantage) GetLatestData(systemUID, dataIDs string) (map[string][]TsV
 	return res, nil
 }
 
+type UnityConf struct {
+	Current struct {
+		Value     interface{} `json:"value"`
+		Timestamp AVTime      `json:"ts"`
+	} `json:"current"`
+	Action struct {
+		OperationID string      `json:"operationId"`
+		TaskID      string      `json:"taskId"`
+		Value       interface{} `json:"value"`
+		ValueType   string      `json:"valueType"`
+		Timestamp   AVTime      `json:"ts"`
+		Status      string      `json:"status"`
+	} `json:"action"`
+}
+
+// GetUnityConfig returns the configuration of a Unity gateways (last datapoints, pending actions...)
+func (av *AirVantage) GetUnityConfig(systemUID string) (map[string]UnityConf, error) {
+
+	resp, err := av.get("unity/" + systemUID + "/conf")
+	if err != nil {
+		return nil, err
+	}
+
+	res := map[string]UnityConf{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // ImportSystems create a batch of systems, with serial numbers ranging from `from` to `to`.
 // The systems will be linked to the application `appID` and set to the READY state.
 func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, tag string) error {
@@ -412,6 +443,55 @@ func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID st
 	}
 
 	url := av.URL("operations/systems/data/retrieve")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
+// ApplySettings launch an operation to write the given settings on the system
+func (av *AirVantage) ApplySettings(settings map[string]interface{}, protocol, systemUID string) (string, error) {
+
+	type Setting struct {
+		Key   string      `json:"key"`
+		Value interface{} `json:"value"`
+	}
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		Settings []Setting `json:"settings"`
+		Protocol string    `json:"protocol"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+	body.Settings = make([]Setting, len(settings))
+	var i = 0
+	for k, v := range settings {
+		body.Settings[i] = Setting{Key: k, Value: v}
+		i++
+	}
+	if protocol != "" {
+		body.Protocol = protocol
+	}
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	url := av.URL("operations/systems/settings")
 
 	if av.Debug {
 		av.log.Printf("POST %s\n%s\n", url, string(js))

@@ -1,9 +1,11 @@
 package airvantage
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,7 +19,7 @@ import (
 
 const defaultTimeout = 5 * time.Second
 
-var defaultLogger = log.New(os.Stderr, "AV", log.LstdFlags)
+var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
 
 // AirVantage API client using oAuth2
 type AirVantage struct {
@@ -111,7 +113,17 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{})
 		return nil
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(respStruct); err != nil {
+	var payload io.Reader = resp.Body
+	if av.Debug {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
+		payload = bytes.NewReader(body)
+	}
+
+	if err := json.NewDecoder(payload).Decode(respStruct); err != nil {
 		return fmt.Errorf("unable to parse API response: %s", err)
 	}
 
@@ -145,5 +157,4 @@ func (av *AirVantage) URL(path string, a ...interface{}) string {
 	}
 
 	return av.baseURL.ResolveReference(&url.URL{Path: path, RawQuery: v.Encode()}).String()
-
 }
