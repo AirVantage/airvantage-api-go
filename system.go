@@ -460,8 +460,8 @@ func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID st
 	return string(res.Operation), nil
 }
 
-// ApplySettings launch an operation to write the given settings on the system
-func (av *AirVantage) ApplySettings(settings map[string]interface{}, protocol, systemUID string) (string, error) {
+// ApplySettings launch an operation to write/delete the given settings on the system
+func (av *AirVantage) ApplySettings(settings map[string]interface{}, delete []string, protocol, systemUID string) (string, error) {
 
 	type Setting struct {
 		Key   string      `json:"key"`
@@ -472,11 +472,16 @@ func (av *AirVantage) ApplySettings(settings map[string]interface{}, protocol, s
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
 		Settings []Setting `json:"settings"`
+		Delete   []string  `json:"deleteSettings"`
 		Protocol string    `json:"protocol"`
+		Reboot   bool      `json:"reboot"`
 	}
 	var body jsonBody
 	body.Systems.UIDs = []string{systemUID}
 	body.Settings = make([]Setting, len(settings))
+	if len(delete) > 0 {
+		body.Delete = delete
+	}
 	var i = 0
 	for k, v := range settings {
 		body.Settings[i] = Setting{Key: k, Value: v}
@@ -485,6 +490,7 @@ func (av *AirVantage) ApplySettings(settings map[string]interface{}, protocol, s
 	if protocol != "" {
 		body.Protocol = protocol
 	}
+	body.Reboot = false
 
 	js, err := json.Marshal(&body)
 	if err != nil {
