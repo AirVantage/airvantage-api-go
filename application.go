@@ -7,8 +7,8 @@ import (
 // An Application descriptor.
 type Application struct {
 	UID                string                 `json:"uid,omitempty"`
-	Name               string                 `json:"name"`
-	Revision           string                 `json:"revision"`
+	Name               string                 `json:"name,omitempty"`
+	Revision           string                 `json:"revision,omitempty"`
 	Type               string                 `json:"type,omitempty"`
 	Category           string                 `json:"category,omitempty"`
 	State              string                 `json:"state,omitempty"`

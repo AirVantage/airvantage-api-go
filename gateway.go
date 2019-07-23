@@ -2,7 +2,7 @@ package airvantage
 
 // Gateway represents the network interface of a System.
 type Gateway struct {
-	UID          string   `json:"uid"`
+	UID          string   `json:"uid,omitempty"`
 	IMEI         string   `json:"imei,omitempty"`
 	MacAddress   string   `json:"macAddress,omitempty"`
 	SerialNumber string   `json:"serialNumber,omitempty"`

@@ -16,7 +16,7 @@ import (
 // A System descriptor.
 type System struct {
 	UID                 string                   `json:"uid,omitempty"`
-	Name                string                   `json:"name"`
+	Name                string                   `json:"name,omitempty"`
 	Type                string                   `json:"type,omitempty"`
 	State               string                   `json:"state,omitempty"` // Deprecated
 	LifeCycleState      string                   `json:"lifeCycleState,omitempty"`
@@ -29,16 +29,16 @@ type System struct {
 	SyncStatus          string                   `json:"syncStatus,omitempty"`
 	LastSyncDate        AVTime                   `json:"lastSyncDate,omitempty"`
 	Labels              []string                 `json:"labels,omitempty"`
-	Gateway             Gateway                  `json:"gateway,omitempty"`
+	Gateway             *Gateway                 `json:"gateway,omitempty"`
 	Subscription        map[string]string        `json:"subscription,omitempty"`
-	Applications        []Application            `json:"applications,omitempty"`
+	Applications        []*Application           `json:"applications,omitempty"`
 	Metadata            map[string]string        `json:"metadata,omitempty"`
 	Data                map[string]interface{}   `json:"data,omitempty"`
 	DataUsage           map[string]interface{}   `json:"dataUsage,omitempty"`
 	Offer               map[string]interface{}   `json:"offer,omitempty"`
-	Communication       Communication            `json:"communication,omitempty"`
+	Communication       *Communication           `json:"communication,omitempty"`
 	Heatbeat            map[string]interface{}   `json:"heartbeat,omitempty"`
-	StatusReport        map[string]string        `json:"statusReport,omitempty"`
+	StatusReport        map[string]interface{}   `json:"statusReport,omitempty"`
 	Reports             []map[string]interface{} `json:"reports,omitempty"`
 }
 
@@ -138,6 +138,37 @@ func (av *AirVantage) CreateSystem(system *System) (*System, error) {
 	}
 
 	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return nil, err
+	}
+
+	sys := &System{}
+	if err = av.parseResponse(resp, sys); err != nil {
+		return nil, err
+	}
+
+	return sys, nil
+}
+
+// EditSystem updates the system
+func (av *AirVantage) EditSystem(uid string, system *System) (*System, error) {
+
+	url := av.URL("systems/" + uid)
+	js, err := json.Marshal(system)
+	if err != nil {
+		return nil, err
+	}
+
+	if av.Debug {
+		av.log.Printf("PUT %s\n%s\n", url, string(js))
+	}
+
+	req, err := http.NewRequest("PUT", url, bytes.NewReader(js))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := av.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
