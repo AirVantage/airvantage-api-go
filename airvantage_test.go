@@ -20,7 +20,7 @@ func TestSystem(t *testing.T) {
 	// Create a new System
 	sysspec := System{
 		Name: "api test",
-		Gateway: Gateway{
+		Gateway: &Gateway{
 			IMEI: "118218318418",
 			Type: "api-gateway",
 		},
@@ -67,6 +67,8 @@ func TestFindAppByTypeRev(t *testing.T) {
 
 func TestInstallApp(t *testing.T) {
 
+	t.SkipNow()
+
 	av, err := NewClient("https://qa.airvantage.io",
 		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
 		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
@@ -93,6 +95,8 @@ func TestInstallApp(t *testing.T) {
 
 func TestGetOperation(t *testing.T) {
 
+	t.SkipNow()
+
 	av, err := NewClient("https://qa.airvantage.io",
 		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
 		os.Getenv("AV_LOGIN"), os.Getenv("AV_PASSWORD"))
@@ -112,6 +116,8 @@ func TestGetOperation(t *testing.T) {
 }
 
 func TestGetLatestData(t *testing.T) {
+
+	t.SkipNow()
 
 	av, err := NewClient("https://qa.airvantage.io",
 		os.Getenv("API_KEY"), os.Getenv("API_SECRET"),
