@@ -341,6 +341,55 @@ func (av *AirVantage) GetUnityConfig(systemUID string) (map[string]UnityConf, er
 	return res, nil
 }
 
+type UnityCommand struct {
+	OperationID string `json:"operationId"`
+	TaskID      string `json:"taskId"`
+	Timestamp   AVTime `json:"ts"`
+	Status      string `json:"status"`
+}
+
+// GetUnityCommand returns the command status of a Unity gateways
+func (av *AirVantage) GetUnityCommand(systemUID string) (map[string]UnityCommand, error) {
+
+	resp, err := av.get("unity/" + systemUID + "/command")
+	if err != nil {
+		return nil, err
+	}
+
+	res := map[string]UnityCommand{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// DismissUnityCommand returns the command status of a Unity gateways
+func (av *AirVantage) DismissUnityCommand(systemUID string, commandID string) error {
+
+	body := struct {
+		CommandIDS []string `json:"commandIds"`
+	}{CommandIDS: []string{commandID}}
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return err
+	}
+
+	url := av.URL("unity/" + systemUID + "/command/dismisserror")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	_, err = av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ImportSystems create a batch of systems, with serial numbers ranging from `from` to `to`.
 // The systems will be linked to the application `appID` and set to the READY state.
 func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, tag string) error {
@@ -529,6 +578,51 @@ func (av *AirVantage) ApplySettings(settings map[string]interface{}, delete []st
 	}
 
 	url := av.URL("operations/systems/settings")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
+// SendCommand launch an operation to run the given command and parameters on the system
+func (av *AirVantage) SendCommand(commandID string, parameters map[string]interface{}, protocol, systemUID string) (string, error) {
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		CommandID  string                 `json:"commandId"`
+		Parameters map[string]interface{} `json:"parameters"`
+		Protocol   string                 `json:"protocol"`
+		Reboot     bool                   `json:"reboot"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+	body.CommandID = commandID
+	body.Parameters = parameters
+
+	if protocol != "" {
+		body.Protocol = protocol
+	}
+	body.Reboot = false
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	url := av.URL("operations/systems/command")
 
 	if av.Debug {
 		av.log.Printf("POST %s\n%s\n", url, string(js))
