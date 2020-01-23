@@ -605,7 +605,6 @@ func (av *AirVantage) SendCommand(commandID string, parameters map[string]interf
 		CommandID  string                 `json:"commandId"`
 		Parameters map[string]interface{} `json:"parameters"`
 		Protocol   string                 `json:"protocol"`
-		Reboot     bool                   `json:"reboot"`
 	}
 	var body jsonBody
 	body.Systems.UIDs = []string{systemUID}
@@ -615,7 +614,6 @@ func (av *AirVantage) SendCommand(commandID string, parameters map[string]interf
 	if protocol != "" {
 		body.Protocol = protocol
 	}
-	body.Reboot = false
 
 	js, err := json.Marshal(&body)
 	if err != nil {
