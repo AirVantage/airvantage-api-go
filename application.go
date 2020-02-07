@@ -2,6 +2,7 @@ package airvantage
 
 import (
 	"fmt"
+	"io"
 )
 
 // An Application descriptor.
@@ -72,4 +73,22 @@ func (av *AirVantage) FindAppByTypeRev(apptype, apprev string) (*Application, er
 		return nil, nil
 	}
 	return &res.Items[0], nil
+}
+
+// ReleaseApplication releases an application
+func (av *AirVantage) ReleaseApplication(zipFile io.Reader) (string, error) {
+
+	// why do we need /api/v1 prefix here?
+	url := av.URL("/api/v1/operations/applications/release")
+
+	resp, err := av.client.Post(url, "application/zip", zipFile)
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
 }
