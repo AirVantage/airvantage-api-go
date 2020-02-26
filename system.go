@@ -2,14 +2,13 @@ package airvantage
 
 import (
 	"bytes"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"net/url"
-	"strconv"
 	"time"
 )
 
@@ -390,50 +389,65 @@ func (av *AirVantage) DismissUnityCommand(systemUID string, commandID string) er
 	return nil
 }
 
-// ImportSystems create a batch of systems, with serial numbers ranging from `from` to `to`.
-// The systems will be linked to the application `appID` and set to the READY state.
-func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, tag string) error {
-	// Genrate the import CSV
-	var bb bytes.Buffer
-	csvw := csv.NewWriter(&bb)
-	csvw.Write([]string{"NAME", "LABELS", "GATEWAY[SERIAL NUMBER]", "MQTT[password]"})
+// ImportSystemsDefaults provides optional information to the
+// ImportSystems operation.
+type ImportSystemsDefaults struct {
+	// Send an email notification when the operation finishes.
+	Notify bool `json:"notify,omitempty"`
+	// Callback URL when the operation finishes.
+	Callback string `json:"callback,omitempty"`
+	// Default application IDs linked to the systems.
+	DefaultApplicationsUID []string `json:"defaultApplications,omitempty"`
+	// Default system state.
+	DefaultState string `json:"defaultState,omitempty"`
+	// Default system type.
+	DefaultType string `json:"defaultType,omitempty"`
+}
 
-	for serial := from; serial < to; serial++ {
-		serialstr := strconv.Itoa(serial)
-		csvw.Write([]string{systemType + serialstr, tag, serialstr, password})
-		if err := csvw.Error(); err != nil {
-			return fmt.Errorf("CSV Writer: %s", err)
-		}
+// ImportSystems creates a batch of systems using data provided in CSV format.
+// To reduce repetitions in the CSV, you should provide `defaults` that will
+// be applied for each system. The default timeout is 5 minutes.
+func (av *AirVantage) ImportSystems(csv io.Reader, defaults *ImportSystemsDefaults, timeout time.Duration) error {
+
+	if csv == nil {
+		return fmt.Errorf("csv reader is nil")
 	}
-	csvw.Flush()
+	if defaults == nil {
+		defaults = &ImportSystemsDefaults{}
+	}
+	if timeout == 0 {
+		timeout = 5 * time.Minute
+	}
 
-	// Generate the import JSON
-	js := fmt.Sprintf(`{"defaultApplications":["%s"],"defaultState":"READY","defaultType":"%s"}`, appID, systemType)
-
-	// Import request
-	url := av.URL("operations/systems/import")
-	var b bytes.Buffer
-	multi := multipart.NewWriter(&b)
+	// Create a multi-part request.
+	var bb bytes.Buffer
+	multi := multipart.NewWriter(&bb)
 
 	// CSV part
 	header := make(textproto.MIMEHeader)
 	header.Set("Content-Disposition", `form-data; name="csv"; filename="file.csv"`)
 	header.Set("Content-Type", "text/csv")
 	partWriter, _ := multi.CreatePart(header)
-	partWriter.Write(bb.Bytes())
+	if _, err := io.Copy(partWriter, csv); err != nil {
+		return fmt.Errorf("ImportSystems: %s", err)
+	}
 
 	// JSON part
 	header = make(textproto.MIMEHeader)
 	header.Set("Content-Disposition", `form-data; name="parameters"; filename="parameters.json"`)
 	header.Set("Content-Type", "application/json")
 	partWriter, _ = multi.CreatePart(header)
-	partWriter.Write([]byte(js))
+	js, err := json.Marshal(defaults)
+	if err != nil {
+		return fmt.Errorf("ImportSystems: %s", err)
+	}
+	partWriter.Write(js)
 
 	multi.Close()
 
-	req, err := http.NewRequest("POST", url, &b)
+	req, err := http.NewRequest("POST", av.URL("operations/systems/import"), &bb)
 	if err != nil {
-		return fmt.Errorf("NewRequest: %s", err)
+		return fmt.Errorf("ImportSystems: %s", err)
 	}
 	req.Header.Set("Content-Type", multi.FormDataContentType())
 
@@ -451,7 +465,7 @@ func (av *AirVantage) ImportSystems(from, to int, password, systemType, appID, t
 	if av.Debug {
 		av.log.Println("waiting for systems import operation", res.Operation)
 	}
-	op, err := av.AwaitOperation(res.Operation, 1*time.Minute)
+	op, err := av.AwaitOperation(res.Operation, timeout)
 	if err != nil {
 		return err
 	}
