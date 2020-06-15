@@ -554,6 +554,83 @@ func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID st
 	return string(res.Operation), nil
 }
 
+/*
+		{
+     *       "systems" : {
+     *          "uids" : {"uid1", "uid2"}
+     *       },
+     *       "heartbeat" : {
+     *          "state" : "ON",
+     *          "period" : "15",
+     *          "sla" : {
+     *             "error" : "2",
+     *             "warning" : "1"
+     *          }
+     *       },
+     *       "statusReport" : {
+     *          "state" : "ON",
+     *          "period" : "20"
+     *       },
+     *       "reports" : [{
+     *          "period" : "20",
+     *          "dataset" : {
+     *             "uid" : "af2061ef883449ae845866672097d005"
+     *          }
+     *       }]
+     *   }
+*/
+
+// Configure Communication launch an operation to configure the communication on the system.
+func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srState string, srPeriod int, systemsUID []string) (string, error) {
+
+	type HeartBeat struct {
+		State string `json:"state"`
+		Period int `json:"period"`
+	}
+
+	type StatusReport struct {
+		State string `json:"state"`
+		Period int `json:"period"`
+	}
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		HeartBeat HeartBeat `json:"heartbeat"`
+		StatusReport StatusReport `json:"statusReport"`
+	}
+
+	var body jsonBody
+	body.Systems.UIDs = systemsUID
+	body.HeartBeat.State = hbState
+	body.HeartBeat.Period = hbPeriod
+	body.StatusReport.State = srState
+	body.StatusReport.Period = srPeriod
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	ccUrl := av.URL("backoffice/systems/configure")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", ccUrl, string(js))
+	}
+
+	resp, err := av.client.Post(ccUrl, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
 // ApplySettings launch an operation to write/delete the given settings on the system
 func (av *AirVantage) ApplySettings(settings map[string]interface{}, delete []string, protocol, systemUID string) (string, error) {
 
