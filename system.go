@@ -586,6 +586,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	type HeartBeat struct {
 		State string `json:"state"`
 		Period int `json:"period"`
+		ServerOnly bool `json:"serverOnly"`
 	}
 
 	type StatusReport struct {
@@ -605,6 +606,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	body.Systems.UIDs = systemsUID
 	body.HeartBeat.State = hbState
 	body.HeartBeat.Period = hbPeriod
+	body.HeartBeat.ServerOnly = false
 	body.StatusReport.State = srState
 	body.StatusReport.Period = srPeriod
 
@@ -613,7 +615,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 		return "", err
 	}
 
-	ccUrl := av.URL("backoffice/systems/configure")
+	ccUrl := av.URL("operations/systems/configure")
 
 	if av.Debug {
 		av.log.Printf("POST %s\n%s\n", ccUrl, string(js))
