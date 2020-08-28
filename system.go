@@ -295,8 +295,14 @@ type TsValue struct {
 // GetLatestData returns the latests data points on a device, without querying it. You can
 // optionally select which data to return by specifying a comma-separated list of data IDs.
 func (av *AirVantage) GetLatestData(systemUID, dataIDs string) (map[string][]TsValue, error) {
+	var err error
+	var resp *http.Response
 
-	resp, err := av.get("systems/"+systemUID+"/data", "ids", dataIDs)
+	if dataIDs != "" {
+		resp, err = av.get("systems/"+systemUID+"/data", "ids", dataIDs)
+	} else {
+		resp, err = av.get("systems/" + systemUID + "/data")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -584,21 +590,21 @@ func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID st
 func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srState string, srPeriod int, systemsUID []string) (string, error) {
 
 	type HeartBeat struct {
-		State string `json:"state"`
-		Period int `json:"period"`
-		ServerOnly bool `json:"serverOnly"`
+		State      string `json:"state"`
+		Period     int    `json:"period"`
+		ServerOnly bool   `json:"serverOnly"`
 	}
 
 	type StatusReport struct {
-		State string `json:"state"`
-		Period int `json:"period"`
+		State  string `json:"state"`
+		Period int    `json:"period"`
 	}
 
 	type jsonBody struct {
 		Systems struct {
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
-		HeartBeat HeartBeat `json:"heartbeat"`
+		HeartBeat    HeartBeat    `json:"heartbeat"`
 		StatusReport StatusReport `json:"statusReport"`
 	}
 
