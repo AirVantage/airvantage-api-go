@@ -26,7 +26,8 @@ type AirVantage struct {
 	client     *http.Client
 	CompanyUID string
 	Debug      bool
-	baseURL    *url.URL
+	baseURLv1  *url.URL
+	baseURLv2  *url.URL
 	log        *log.Logger
 }
 
@@ -41,15 +42,14 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 		host = strings.TrimPrefix(host, "https://")
 	}
 
-	//baseURL := &url.URL{Host: host, Scheme: scheme, Path: "/api/v1"}
-	baseURL := &url.URL{Host: host, Scheme: scheme, Path: "/api/oauth/"}
+	oauthURL := &url.URL{Host: host, Scheme: scheme, Path: "/api/oauth/"}
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Endpoint: oauth2.Endpoint{
-			TokenURL: baseURL.ResolveReference(&url.URL{Path: "token"}).String(),
-			AuthURL:  baseURL.ResolveReference(&url.URL{Path: "auth"}).String(),
+			TokenURL: oauthURL.ResolveReference(&url.URL{Path: "token"}).String(),
+			AuthURL:  oauthURL.ResolveReference(&url.URL{Path: "auth"}).String(),
 		},
 	}
 
@@ -60,19 +60,28 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 		return nil, err
 	}
 
-	baseURL.Path = "/api/v1/"
-
-	return &AirVantage{client: conf.Client(ctx, token), baseURL: baseURL, log: defaultLogger}, nil
+	return &AirVantage{
+			client:    conf.Client(ctx, token),
+			baseURLv1: &url.URL{Host: host, Scheme: scheme, Path: "/api/v1/"},
+			baseURLv2: &url.URL{Host: host, Scheme: scheme, Path: "/api/v2/"},
+			log:       defaultLogger,
+		},
+		nil
 }
 
-// get with smart URL formatting.
+// get with smart URL formatting (API v1)
 func (av *AirVantage) get(format string, a ...interface{}) (*http.Response, error) {
 	return av.client.Get(av.URL(format, a...))
 }
 
-// get with query parameters
+// get with smart URL formatting (API v2)
+func (av *AirVantage) getV2(format string, a ...interface{}) (*http.Response, error) {
+	return av.client.Get(av.URLv2(format, a...))
+}
+
+// get with query parameters (API v1)
 func (av *AirVantage) getWithParams(path string, params url.Values) (*http.Response, error) {
-	return av.client.Get(av.baseURL.ResolveReference(&url.URL{Path: path, RawQuery: params.Encode()}).String())
+	return av.client.Get(av.baseURLv1.ResolveReference(&url.URL{Path: path, RawQuery: params.Encode()}).String())
 }
 
 type apiError struct {
@@ -140,7 +149,7 @@ func (av *AirVantage) SetTimeout(timeout time.Duration) {
 	av.client.Timeout = timeout
 }
 
-// URL builds a URL with the right host and prefix for API calls.
+// URL builds a URL with the right host and prefix for API calls (API v1)
 func (av *AirVantage) URL(path string, a ...interface{}) string {
 	v := url.Values{}
 
@@ -156,5 +165,24 @@ func (av *AirVantage) URL(path string, a ...interface{}) string {
 		}
 	}
 
-	return av.baseURL.ResolveReference(&url.URL{Path: path, RawQuery: v.Encode()}).String()
+	return av.baseURLv1.ResolveReference(&url.URL{Path: path, RawQuery: v.Encode()}).String()
+}
+
+// URLv2 builds a URL with the right host and prefix for API calls (api/v2 prefix)
+func (av *AirVantage) URLv2(path string, a ...interface{}) string {
+	v := url.Values{}
+
+	if av.CompanyUID != "" {
+		v.Set("company", av.CompanyUID)
+	}
+
+	for i := 0; i < len(a); i += 2 {
+		if aStr, ok := a[i+1].(string); ok {
+			v.Add(a[i].(string), aStr)
+		} else {
+			v.Add(a[i].(string), fmt.Sprintf("%v", a[i+1]))
+		}
+	}
+
+	return av.baseURLv2.ResolveReference(&url.URL{Path: path, RawQuery: v.Encode()}).String()
 }

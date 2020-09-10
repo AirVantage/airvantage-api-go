@@ -292,7 +292,7 @@ type TsValue struct {
 	Timestamp AVTime      `json:"timestamp"`
 }
 
-// GetLatestData returns the latests data points on a device, without querying it. You can
+// GetLatestData V1 returns the latests data points on a device, without querying it. You can
 // optionally select which data to return by specifying a comma-separated list of data IDs.
 func (av *AirVantage) GetLatestData(systemUID, dataIDs string) (map[string][]TsValue, error) {
 	var err error
@@ -308,6 +308,34 @@ func (av *AirVantage) GetLatestData(systemUID, dataIDs string) (map[string][]TsV
 	}
 
 	res := map[string][]TsValue{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+type TsValueV2 struct {
+	Value     interface{} `json:"v"`
+	Timestamp AVTime      `json:"ts"`
+}
+
+// GetLatestDataV2 returns the latests data points on a device, without querying it. You can
+// optionally select which data to return by specifying a comma-separated list of data IDs.
+func (av *AirVantage) GetLatestDataV2(systemUID, dataIDs string) (map[string][]TsValueV2, error) {
+	var err error
+	var resp *http.Response
+
+	if dataIDs != "" {
+		resp, err = av.getV2("systems/"+systemUID+"/data", "ids", dataIDs)
+	} else {
+		resp, err = av.getV2("systems/" + systemUID + "/data")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	res := map[string][]TsValueV2{}
 	if err = av.parseResponse(resp, &res); err != nil {
 		return nil, err
 	}
