@@ -47,6 +47,19 @@ type Datapoint struct {
 	v  interface{}
 }
 
+type DataSet struct {
+	Uid           string   `json:"uid"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Configuration []string `json:"configuration"`
+	Application string `json:"application"`
+}
+
+type AdvancedReports struct {
+	Period int `json:"period"`
+	DataSet DataSet `json:"dataset"`
+}
+
 // DataAggregate is used to retrieved data from many devices.
 // The first string is the systemUID, the second is the data name.
 type DataAggregate map[string]map[string][]Datapoint
@@ -588,34 +601,8 @@ func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID st
 	return string(res.Operation), nil
 }
 
-/*
-		{
-     *       "systems" : {
-     *          "uids" : {"uid1", "uid2"}
-     *       },
-     *       "heartbeat" : {
-     *          "state" : "ON",
-     *          "period" : "15",
-     *          "sla" : {
-     *             "error" : "2",
-     *             "warning" : "1"
-     *          }
-     *       },
-     *       "statusReport" : {
-     *          "state" : "ON",
-     *          "period" : "20"
-     *       },
-     *       "reports" : [{
-     *          "period" : "20",
-     *          "dataset" : {
-     *             "uid" : "af2061ef883449ae845866672097d005"
-     *          }
-     *       }]
-     *   }
-*/
-
 // Configure Communication launch an operation to configure the communication on the system.
-func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srState string, srPeriod int, systemsUID []string) (string, error) {
+func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srState string, srPeriod int, systemsUID []string, reports []AdvancedReports) (string, error) {
 
 	type HeartBeat struct {
 		State      string `json:"state"`
@@ -634,6 +621,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 		} `json:"systems"`
 		HeartBeat    HeartBeat    `json:"heartbeat"`
 		StatusReport StatusReport `json:"statusReport"`
+		AdvancedReports []AdvancedReports `json:"reports"`
 	}
 
 	var body jsonBody
@@ -643,6 +631,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	body.HeartBeat.ServerOnly = false
 	body.StatusReport.State = srState
 	body.StatusReport.Period = srPeriod
+	body.AdvancedReports = reports
 
 	js, err := json.Marshal(&body)
 	if err != nil {
@@ -665,6 +654,37 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 		return "", err
 	}
 	return string(res.Operation), nil
+}
+
+func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (string, error) {
+
+	var dataset DataSet
+	dataset.Name = name
+	dataset.Description = description
+	dataset.Configuration = configuration
+	dataset.Application = appId
+
+	js, err := json.Marshal(&dataset)
+	if err != nil {
+		return "", err
+	}
+
+	ccUrl := av.URL("/api/v2/datasets")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", ccUrl, string(js))
+	}
+
+	resp, err := av.client.Post(ccUrl, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Dataset string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Dataset), nil
 }
 
 // ApplySettings launch an operation to write/delete the given settings on the system
