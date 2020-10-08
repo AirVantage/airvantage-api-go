@@ -656,7 +656,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	return string(res.Operation), nil
 }
 
-func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (string, error) {
+func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (DataSet, error) {
 
 	var dataset DataSet
 	dataset.Name = name
@@ -666,7 +666,13 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 
 	js, err := json.Marshal(&dataset)
 	if err != nil {
-		return "", err
+		return DataSet{
+			Uid:           "",
+			Name:          "",
+			Description:   "",
+			Configuration: nil,
+			Application:   "",
+		}, err
 	}
 
 	ccUrl := av.URL("/api/v2/datasets")
@@ -677,14 +683,26 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 
 	resp, err := av.client.Post(ccUrl, "application/json", bytes.NewReader(js))
 	if err != nil {
-		return "", err
+		return DataSet{
+			Uid:           "",
+			Name:          "",
+			Description:   "",
+			Configuration: nil,
+			Application:   "",
+		}, err
 	}
 
-	res := struct{ Dataset string }{}
+	res := struct{ Dataset DataSet }{}
 	if err = av.parseResponse(resp, &res); err != nil {
-		return "", err
+		return DataSet{
+			Uid:           "",
+			Name:          "",
+			Description:   "",
+			Configuration: nil,
+			Application:   "",
+		}, err
 	}
-	return string(res.Dataset), nil
+	return res.Dataset, nil
 }
 
 // ApplySettings launch an operation to write/delete the given settings on the system
