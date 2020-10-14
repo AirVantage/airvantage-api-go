@@ -47,12 +47,16 @@ type Datapoint struct {
 	v  interface{}
 }
 
-type DataSet struct {
+type Info struct {
 	Uid           string   `json:"uid"`
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
-	Configuration []string `json:"configuration"`
 	Application string `json:"application"`
+}
+
+type DataSet struct {
+	Info Info `json:"info"`
+	Configuration []string `json:"dataset"`
 }
 
 type AdvancedReports struct {
