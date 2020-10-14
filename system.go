@@ -629,13 +629,23 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	}
 
 	var body jsonBody
-	body.Systems.UIDs = systemsUID
-	body.HeartBeat.State = hbState
-	body.HeartBeat.Period = hbPeriod
+	if len(systemsUID) > 0 {
+		body.Systems.UIDs = systemsUID
+		if hbPeriod != 0 && len(hbState) > 0 {
+			body.HeartBeat.State = hbState
+			body.HeartBeat.Period = hbPeriod
+		}
+
+		if srPeriod != 0 && len(srState) > 0 {
+			body.StatusReport.State = srState
+			body.StatusReport.Period = srPeriod
+		}
+
+		if len(reports) > 0 {
+			body.AdvancedReports = reports
+		}
+	}
 	body.HeartBeat.ServerOnly = false
-	body.StatusReport.State = srState
-	body.StatusReport.Period = srPeriod
-	body.AdvancedReports = reports
 
 	js, err := json.Marshal(&body)
 	if err != nil {
@@ -660,23 +670,17 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	return string(res.Operation), nil
 }
 
-func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (DataSet, error) {
+func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (*DataSet, error) {
 
 	var dataset DataSet
-	dataset.Name = name
-	dataset.Description = description
+	dataset.Info.Name = name
+	dataset.Info.Description = description
 	dataset.Configuration = configuration
-	dataset.Application = appId
+	dataset.Info.Application = appId
 
 	js, err := json.Marshal(&dataset)
 	if err != nil {
-		return DataSet{
-			Uid:           "",
-			Name:          "",
-			Description:   "",
-			Configuration: nil,
-			Application:   "",
-		}, err
+		return nil, err
 	}
 
 	ccUrl := av.URL("/api/v2/datasets")
@@ -687,24 +691,12 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 
 	resp, err := av.client.Post(ccUrl, "application/json", bytes.NewReader(js))
 	if err != nil {
-		return DataSet{
-			Uid:           "",
-			Name:          "",
-			Description:   "",
-			Configuration: nil,
-			Application:   "",
-		}, err
+		return nil, err
 	}
 
-	res := struct{ Dataset DataSet }{}
+	res := struct{ Dataset *DataSet }{}
 	if err = av.parseResponse(resp, &res); err != nil {
-		return DataSet{
-			Uid:           "",
-			Name:          "",
-			Description:   "",
-			Configuration: nil,
-			Application:   "",
-		}, err
+		return nil, err
 	}
 	return res.Dataset, nil
 }
