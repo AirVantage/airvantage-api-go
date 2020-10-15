@@ -671,7 +671,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	return string(res.Operation), nil
 }
 
-func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (*Info, error) {
+func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (*DataSet, error) {
 
 	var dataset DataSet
 	dataset.Info.Name = name
@@ -695,7 +695,7 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 		return nil, err
 	}
 	log.Printf("Response 1: %+v", resp)
-	res := struct{ Dataset *Info }{}
+	res := struct{ Dataset *DataSet }{}
 	if err = av.parseResponse(resp, &res); err != nil {
 		return nil, err
 	}
