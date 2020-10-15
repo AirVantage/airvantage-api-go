@@ -670,7 +670,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	return string(res.Operation), nil
 }
 
-func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (*DataSet, error) {
+func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (*Info, error) {
 
 	var dataset DataSet
 	dataset.Info.Name = name
