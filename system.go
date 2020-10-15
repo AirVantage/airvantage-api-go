@@ -51,7 +51,7 @@ type Info struct {
 	Uid           string   `json:"uid"`
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
-	Application string `json:"application"`
+	Application string `json:"applicationId"`
 }
 
 type DataSet struct {
