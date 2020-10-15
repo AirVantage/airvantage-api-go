@@ -695,13 +695,13 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 		return nil, err
 	}
 	log.Printf("Response 1: %+v", resp)
-	res := struct{ Dataset *DataSet }{}
+	res := &DataSet{}
 	if err = av.parseResponse(resp, &res); err != nil {
 		return nil, err
 	}
 	log.Printf("Response parsed: %+v", res)
 
-	return res.Dataset, nil
+	return res, nil
 }
 
 // ApplySettings launch an operation to write/delete the given settings on the system
