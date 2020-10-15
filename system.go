@@ -694,12 +694,12 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 	if err != nil {
 		return nil, err
 	}
-
+	log.Printf("Response 1: %+v", resp)
 	res := struct{ Dataset *Info }{}
 	if err = av.parseResponse(resp, &res); err != nil {
 		return nil, err
 	}
-	log.Printf("Response : %+v", res)
+	log.Printf("Response parsed: %+v", res)
 
 	return res.Dataset, nil
 }
