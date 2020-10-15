@@ -694,7 +694,7 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 		return nil, err
 	}
 
-	res := struct{ Dataset *DataSet }{}
+	res := struct{ Dataset *Info }{}
 	if err = av.parseResponse(resp, &res); err != nil {
 		return nil, err
 	}
