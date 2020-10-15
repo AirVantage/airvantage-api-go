@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -698,6 +699,8 @@ func (av *AirVantage) CreateDataset (name string, description string, configurat
 	if err = av.parseResponse(resp, &res); err != nil {
 		return nil, err
 	}
+	log.Printf("Response : %+v", res)
+
 	return res.Dataset, nil
 }
 
