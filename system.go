@@ -62,7 +62,7 @@ type DataSet struct {
 
 type AdvancedReports struct {
 	Period int `json:"period"`
-	DataSet DataSet `json:"dataset"`
+	DataSet string `json:"dataset"`
 }
 
 // DataAggregate is used to retrieved data from many devices.
@@ -632,12 +632,12 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	var body jsonBody
 	if len(systemsUID) > 0 {
 		body.Systems.UIDs = systemsUID
-		if hbPeriod != 0 && len(hbState) > 0 {
+		if hbPeriod != 0 {
 			body.HeartBeat.State = hbState
 			body.HeartBeat.Period = hbPeriod
 		}
 
-		if srPeriod != 0 && len(srState) > 0 {
+		if srPeriod != 0 {
 			body.StatusReport.State = srState
 			body.StatusReport.Period = srPeriod
 		}
