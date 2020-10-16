@@ -48,6 +48,10 @@ type Datapoint struct {
 	v  interface{}
 }
 
+type UidInfo struct {
+	Uid           string   `json:"uid"`
+}
+
 type Info struct {
 	Uid           string   `json:"uid"`
 	Name          string   `json:"name"`
@@ -62,7 +66,7 @@ type DataSet struct {
 
 type AdvancedReports struct {
 	Period int `json:"period"`
-	DataSet string `json:"dataset"`
+	DataSet UidInfo `json:"dataset"`
 }
 
 // DataAggregate is used to retrieved data from many devices.
