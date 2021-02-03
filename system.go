@@ -49,19 +49,19 @@ type Datapoint struct {
 }
 
 type Info struct {
-	Uid           string   `json:"uid"`
-	Name          string   `json:"name"`
-	Description   string   `json:"description"`
+	Uid         string `json:"uid"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 	Application string `json:"applicationId"`
 }
 
 type DataSet struct {
-	Info Info `json:"info"`
+	Info          Info     `json:"info"`
 	Configuration []string `json:"dataset"`
 }
 
 type AdvancedReports struct {
-	Period int `json:"period"`
+	Period  int  `json:"period"`
 	DataSet Info `json:"dataset"`
 }
 
@@ -624,8 +624,8 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 		Systems struct {
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
-		HeartBeat    HeartBeat    `json:"heartbeat"`
-		StatusReport StatusReport `json:"statusReport"`
+		HeartBeat       HeartBeat         `json:"heartbeat"`
+		StatusReport    StatusReport      `json:"statusReport"`
 		AdvancedReports []AdvancedReports `json:"reports"`
 	}
 
@@ -671,7 +671,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 	return string(res.Operation), nil
 }
 
-func (av *AirVantage) CreateDataset (name string, description string, configuration []string, appId string) (*DataSet, error) {
+func (av *AirVantage) CreateDataset(name string, description string, configuration []string, appId string) (*DataSet, error) {
 
 	var dataset DataSet
 	dataset.Info.Name = name
@@ -785,6 +785,44 @@ func (av *AirVantage) SendCommand(commandID string, parameters map[string]interf
 	}
 
 	url := av.URL("operations/systems/command")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
+// SendFile launches an operation to send the given file to a system
+func (av *AirVantage) SendFile(fileID, target, systemUID string) (string, error) {
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		FileID string `json:"file"`
+		Target string `json:"target"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+	body.FileID = fileID
+	body.Target = target
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	url := av.URL("operations/systems/file/send")
 
 	if av.Debug {
 		av.log.Printf("POST %s\n%s\n", url, string(js))
