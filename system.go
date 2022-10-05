@@ -167,6 +167,38 @@ func (av *AirVantage) CreateSystem(system *System) (*System, error) {
 	return sys, nil
 }
 
+// ActivateSystem activates a system
+func (av *AirVantage) ActivateSystem(system *System) (string, error) {
+
+	url := av.URL("operations/systems/activate")
+	selection := struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+	}{}
+	selection.Systems.UIDs = []string{system.UID}
+
+	js, err := json.Marshal(selection)
+	if err != nil {
+		return "", err
+	}
+
+	if av.Debug {
+		av.log.Printf("Post %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
 // EditSystem updates the system
 func (av *AirVantage) EditSystem(uid string, system *System) (*System, error) {
 
