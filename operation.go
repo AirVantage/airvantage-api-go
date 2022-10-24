@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -154,4 +157,61 @@ func (av *AirVantage) CancelOperation(opUID string) (*Operation, error) {
 		return nil, err
 	}
 	return op, nil
+}
+
+// GetOperationUnsignedPayload retrieves the operation unsigned payload as a JSON string
+func (av *AirVantage) GetOperationUnsignedPayload(uid string) (string, error) {
+	resp, err := av.get(fmt.Sprintf("operations/%s/unsignedpayload", uid))
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != 200 {
+		return "", errors.New(fmt.Sprintf("Invalid response when retrieveing unsignedpayload: %+v", resp))
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+// ApproveOperation approves the operation with the given UID.
+func (av *AirVantage) ApproveOperation(opUID, base64Signature, algorithm string, certificateChain io.Reader) (err error) {
+
+	values := make(map[string]io.Reader)
+	values["cert"] = certificateChain
+	values["signature"] = strings.NewReader(base64Signature)
+	values["algorithm"] = strings.NewReader(algorithm)
+
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	for key, r := range values {
+		var fw io.Writer
+		if x, ok := r.(io.Closer); ok {
+			defer x.Close()
+		}
+		if key == "cert" {
+			// Add certificate
+			if fw, err = w.CreateFormFile(key, "cert-chain.pem"); err != nil {
+				return err
+			}
+		} else {
+			// Add other fields
+			if fw, err = w.CreateFormField(key); err != nil {
+				return
+			}
+		}
+		if _, err = io.Copy(fw, r); err != nil {
+			return err
+		}
+	}
+	w.Close()
+
+	resp, err := av.client.Post(av.URL(fmt.Sprintf("operations/%s/approve", opUID)), w.FormDataContentType(), &b)
+	if resp.StatusCode != 200 {
+		return errors.New(fmt.Sprintf("Invalid response for approve API call: %+v", resp))
+	}
+	return err
 }

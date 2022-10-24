@@ -81,7 +81,14 @@ func (av *AirVantage) getV2(format string, a ...interface{}) (*http.Response, er
 
 // get with query parameters (API v1)
 func (av *AirVantage) getWithParams(path string, params url.Values) (*http.Response, error) {
-	return av.client.Get(av.baseURLv1.ResolveReference(&url.URL{Path: path, RawQuery: params.Encode()}).String())
+	copy := url.Values{}
+	for k := range params {
+		copy.Add(k, params.Get(k))
+	}
+	if av.CompanyUID != "" && !copy.Has("company") {
+		copy.Add("company", av.CompanyUID)
+	}
+	return av.client.Get(av.baseURLv1.ResolveReference(&url.URL{Path: path, RawQuery: copy.Encode()}).String())
 }
 
 type apiError struct {
