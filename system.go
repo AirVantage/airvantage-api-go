@@ -871,3 +871,81 @@ func (av *AirVantage) SendFile(fileID, target, systemUID string) (string, error)
 	}
 	return string(res.Operation), nil
 }
+
+// Reboot launch an operation to run a reboot on the given system
+func (av *AirVantage) Reboot(action string, systemUID string) (string, error) {
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		Action string `json:"action"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+
+	if action != "" {
+		body.Action = action
+	}
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	url := av.URL("operations/systems/reboot")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
+// Reset launch an operation to run a factory Reset on the given system
+func (av *AirVantage) Reset(action string, systemUID string) (string, error) {
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		Action string `json:"action"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+
+	if action != "" {
+		body.Action = action
+	}
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	url := av.URL("operations/systems/reset")
+
+	if av.Debug {
+		av.log.Printf("POST %s\n%s\n", url, string(js))
+	}
+
+	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
