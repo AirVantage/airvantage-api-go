@@ -879,7 +879,7 @@ func (av *AirVantage) Reboot(action string, systemUID string) (string, error) {
 		Systems struct {
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
-		Action *string `json:"action"`
+		Action *string `json:"action"` //optional, null by default
 	}
 	var body jsonBody
 	body.Systems.UIDs = []string{systemUID}
@@ -918,7 +918,7 @@ func (av *AirVantage) Reset(action string, systemUID string) (string, error) {
 		Systems struct {
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
-		Action string `json:"action"`
+		Action *string `json:"action"` //optional, null by default
 	}
 	var body jsonBody
 	body.Systems.UIDs = []string{systemUID}
