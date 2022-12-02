@@ -879,13 +879,13 @@ func (av *AirVantage) Reboot(action string, systemUID string) (string, error) {
 		Systems struct {
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
-		Action string `json:"action"`
+		Action *string `json:"action"`
 	}
 	var body jsonBody
 	body.Systems.UIDs = []string{systemUID}
 
 	if action != "" {
-		body.Action = action
+		body.Action = &action
 	}
 
 	js, err := json.Marshal(&body)
