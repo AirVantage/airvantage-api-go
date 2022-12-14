@@ -924,7 +924,7 @@ func (av *AirVantage) Reset(action string, systemUID string) (string, error) {
 	body.Systems.UIDs = []string{systemUID}
 
 	if action != "" {
-		body.Action = action
+		body.Action = &action
 	}
 
 	js, err := json.Marshal(&body)
