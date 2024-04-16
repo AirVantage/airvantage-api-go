@@ -337,6 +337,37 @@ func (av *AirVantage) FindSystemByUID(UID string) (*System, error) {
 	return &res, nil
 }
 
+// GetSystemSecurityInfo returns the System communication info.
+// Parameters:
+// - authkey: authentication key for internal API
+// - systemIdentifier: system identifier
+// - secuType: communication identifier SERIAL_NUMBER, IMEI, MAC_ADDRESS, PSK_IDENTITY, CUSTOM
+// - protocol: communication type MSCI, OMADM, AWTDA2, M3DA, REST, MQTT, LWM2M
+func (av *AirVantage) GetSystemSecurityInfo(authkey string, systemIdentifier string, secuType string, protocol string) (*SystemSecurityInfo, error) {
+
+	url := fmt.Sprintf("%s://%s/device/internal/securityinfo?id=%s&type=%s&protocol=%s&AUTHKEY=%s",
+		av.baseURLv1.Scheme, av.baseURLv1.Host, systemIdentifier, secuType, protocol, authkey)
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := av.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// get the raw response, which is java object serialization
+	res := []SystemSecurityInfo{}
+	if err = av.parseResponseSystemSecurityInfo(resp, &res); err != nil {
+		return nil, err
+	}
+
+	if len(res) == 0 {
+		return nil, fmt.Errorf("no %s commInfos found for system using %s %s", protocol, secuType, systemIdentifier)
+	}
+
+	return &res[0], nil
+}
+
 type TsValue struct {
 	Value     interface{} `json:"value"`
 	Timestamp AVTime      `json:"timestamp"`

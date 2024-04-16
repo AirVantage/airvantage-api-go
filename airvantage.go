@@ -6,18 +6,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
 )
 
-const defaultTimeout = 5 * time.Second
+const (
+	defaultTimeout = 5 * time.Second
+	// regexp pattern to cleanup json from device/internal/securityinfo core API endpoint response
+	javaObjectNamespace = `"com\.sierrawireless\.airvantage\.services\.[^"]*",`
+)
 
 var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
 
@@ -101,8 +105,69 @@ type apiError struct {
 func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{}) error {
 	defer resp.Body.Close()
 
+	if err := av.parseError(resp); err != nil {
+		return err
+	}
+
+	if respStruct == nil {
+		return nil
+	}
+
+	var payload io.Reader = resp.Body
+	if av.Debug {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
+		payload = bytes.NewReader(body)
+	}
+
+	if err := json.NewDecoder(payload).Decode(respStruct); err != nil {
+		return fmt.Errorf("unable to parse API response: %s", err)
+	}
+
+	return nil
+}
+
+// parseResponseSystemSecurityInfo is similar to parseResponse
+// since the response is Java object serialized we have to remove these references
+// respStruct must be a pointer to a struct where the JSON will be deserialized.
+func (av *AirVantage) parseResponseSystemSecurityInfo(resp *http.Response, respStruct interface{}) error {
+	defer resp.Body.Close()
+
+	err := av.parseError(resp)
+	if err != nil {
+		return err
+	}
+
+	if respStruct == nil {
+		return nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if av.Debug {
+		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
+	}
+
+	// use a regexp to remove the Java object reference from the response
+	// it's much easier to do that rather than parsing json into a []interface{}
+	reg := regexp.MustCompile(javaObjectNamespace)
+	jsonFiltered := reg.ReplaceAllString(string(body), "")
+
+	if err := json.Unmarshal([]byte(jsonFiltered), &respStruct); err != nil {
+		return fmt.Errorf("unable to parse API response: %s", err)
+	}
+
+	return nil
+}
+
+func (av *AirVantage) parseError(resp *http.Response) error {
 	if resp.StatusCode > 299 {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -124,25 +189,6 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{})
 			return avError(resp.Request.URL.Path, apierror.Error, apierror.ErrorParameters)
 		}
 	}
-
-	if respStruct == nil {
-		return nil
-	}
-
-	var payload io.Reader = resp.Body
-	if av.Debug {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
-		payload = bytes.NewReader(body)
-	}
-
-	if err := json.NewDecoder(payload).Decode(respStruct); err != nil {
-		return fmt.Errorf("unable to parse API response: %s", err)
-	}
-
 	return nil
 }
 
