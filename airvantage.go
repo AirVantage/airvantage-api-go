@@ -20,7 +20,7 @@ import (
 const (
 	defaultTimeout = 5 * time.Second
 	// regexp pattern to cleanup json from device/internal/securityinfo core API endpoint response
-	javaObjectNamespace = `"com\.sierrawireless\.airvantage\.services\.[^"]*",`
+	javaObjectNamespace = `"com\.sierrawireless\.airvantage\.[^"]*",`
 )
 
 var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
@@ -110,7 +110,7 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{})
 	}
 
 	if respStruct == nil {
-		return nil
+		return fmt.Errorf("parsing type not set")
 	}
 
 	var payload io.Reader = resp.Body
@@ -136,13 +136,12 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{})
 func (av *AirVantage) parseResponseSystemSecurityInfo(resp *http.Response, respStruct interface{}) error {
 	defer resp.Body.Close()
 
-	err := av.parseError(resp)
-	if err != nil {
+	if err := av.parseError(resp); err != nil {
 		return err
 	}
 
 	if respStruct == nil {
-		return nil
+		return fmt.Errorf("parsing type not set")
 	}
 
 	body, err := io.ReadAll(resp.Body)
