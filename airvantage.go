@@ -19,8 +19,6 @@ import (
 
 const (
 	defaultTimeout = 5 * time.Second
-	// regexp pattern to cleanup json from device/internal/securityinfo core API endpoint response
-	javaObjectNamespace = `"com\.sierrawireless\.airvantage\.[^"]*",`
 )
 
 var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
@@ -130,10 +128,10 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
 	return nil
 }
 
-// parseResponseSystemSecurityInfo is similar to parseResponse
-// since the response is Java object serialized we have to remove these references
+// parseResponseSerializedJava is similar to parseResponse
+// but handle the response of serialized Java object (by removing references using regexp pattern)
 // respStruct must be a pointer to a struct where the JSON will be deserialized.
-func (av *AirVantage) parseResponseSystemSecurityInfo(resp *http.Response, respStruct any) error {
+func (av *AirVantage) parseResponseSerializedJava(resp *http.Response, respStruct any, pattern string) error {
 	defer resp.Body.Close()
 
 	if err := av.parseError(resp); err != nil {
@@ -154,7 +152,7 @@ func (av *AirVantage) parseResponseSystemSecurityInfo(resp *http.Response, respS
 
 	// use a regexp to remove the Java object reference from the response
 	// it's much easier to do that rather than parsing json into a []any
-	reg := regexp.MustCompile(javaObjectNamespace)
+	reg := regexp.MustCompile(pattern)
 	jsonFiltered := reg.ReplaceAllString(string(body), "")
 
 	if err := json.Unmarshal([]byte(jsonFiltered), &respStruct); err != nil {

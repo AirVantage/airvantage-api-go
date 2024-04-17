@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	// regexp pattern to cleanup json from device/internal/securityinfo core API endpoint response
+	javaObjectNamespaceSierra = `"com\.sierrawireless\.airvantage\.[^"]*",`
+)
+
 // A System descriptor.
 type System struct {
 	UID                 string            `json:"uid,omitempty"`
@@ -357,7 +362,7 @@ func (av *AirVantage) GetSystemSecurityInfo(authkey string, systemIdentifier str
 
 	// get the raw response, which is java object serialization
 	res := []SystemSecurityInfo{}
-	if err = av.parseResponseSystemSecurityInfo(resp, &res); err != nil {
+	if err = av.parseResponseSerializedJava(resp, &res, javaObjectNamespaceSierra); err != nil {
 		return nil, err
 	}
 
