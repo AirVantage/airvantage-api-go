@@ -15,37 +15,37 @@ import (
 
 // A System descriptor.
 type System struct {
-	UID                 string                   `json:"uid,omitempty"`
-	Name                string                   `json:"name,omitempty"`
-	Type                string                   `json:"type,omitempty"`
-	State               string                   `json:"state,omitempty"` // Deprecated
-	LifeCycleState      string                   `json:"lifeCycleState,omitempty"`
-	ActivityState       string                   `json:"activityState,omitempty"`
-	CommStatus          string                   `json:"comStatus,omitempty"`
-	CreationDate        AVTime                   `json:"creationDate,omitempty"`
-	ActivationDate      AVTime                   `json:"activationDate,omitempty"`
-	LastStateChangeDate AVTime                   `json:"lastStateChangeDate,omitempty"`
-	LastCommDate        AVTime                   `json:"lastCommDate,omitempty"`
-	SyncStatus          string                   `json:"syncStatus,omitempty"`
-	LastSyncDate        AVTime                   `json:"lastSyncDate,omitempty"`
-	Labels              []string                 `json:"labels,omitempty"`
-	Gateway             *Gateway                 `json:"gateway,omitempty"`
-	Subscription        map[string]string        `json:"subscription,omitempty"`
-	Applications        []*Application           `json:"applications,omitempty"`
-	Metadata            map[string]string        `json:"metadata,omitempty"`
-	Data                map[string]interface{}   `json:"data,omitempty"`
-	DataUsage           map[string]interface{}   `json:"dataUsage,omitempty"`
-	Offer               map[string]interface{}   `json:"offer,omitempty"`
-	Communication       *Communication           `json:"communication,omitempty"`
-	Heatbeat            map[string]interface{}   `json:"heartbeat,omitempty"`
-	StatusReport        map[string]interface{}   `json:"statusReport,omitempty"`
-	Reports             []map[string]interface{} `json:"reports,omitempty"`
+	UID                 string            `json:"uid,omitempty"`
+	Name                string            `json:"name,omitempty"`
+	Type                string            `json:"type,omitempty"`
+	State               string            `json:"state,omitempty"` // Deprecated
+	LifeCycleState      string            `json:"lifeCycleState,omitempty"`
+	ActivityState       string            `json:"activityState,omitempty"`
+	CommStatus          string            `json:"comStatus,omitempty"`
+	CreationDate        AVTime            `json:"creationDate,omitempty"`
+	ActivationDate      AVTime            `json:"activationDate,omitempty"`
+	LastStateChangeDate AVTime            `json:"lastStateChangeDate,omitempty"`
+	LastCommDate        AVTime            `json:"lastCommDate,omitempty"`
+	SyncStatus          string            `json:"syncStatus,omitempty"`
+	LastSyncDate        AVTime            `json:"lastSyncDate,omitempty"`
+	Labels              []string          `json:"labels,omitempty"`
+	Gateway             *Gateway          `json:"gateway,omitempty"`
+	Subscription        map[string]string `json:"subscription,omitempty"`
+	Applications        []*Application    `json:"applications,omitempty"`
+	Metadata            map[string]string `json:"metadata,omitempty"`
+	Data                map[string]any    `json:"data,omitempty"`
+	DataUsage           map[string]any    `json:"dataUsage,omitempty"`
+	Offer               map[string]any    `json:"offer,omitempty"`
+	Communication       *Communication    `json:"communication,omitempty"`
+	Heatbeat            map[string]any    `json:"heartbeat,omitempty"`
+	StatusReport        map[string]any    `json:"statusReport,omitempty"`
+	Reports             []map[string]any  `json:"reports,omitempty"`
 }
 
 // A Datapoint retrieved from a System.
 type Datapoint struct {
 	ts AVTime
-	v  interface{}
+	v  any
 }
 
 type Info struct {
@@ -369,8 +369,8 @@ func (av *AirVantage) GetSystemSecurityInfo(authkey string, systemIdentifier str
 }
 
 type TsValue struct {
-	Value     interface{} `json:"value"`
-	Timestamp AVTime      `json:"timestamp"`
+	Value     any    `json:"value"`
+	Timestamp AVTime `json:"timestamp"`
 }
 
 // GetLatestData V1 returns the latests data points on a device, without querying it. You can
@@ -397,8 +397,8 @@ func (av *AirVantage) GetLatestData(systemUID, dataIDs string) (map[string][]TsV
 }
 
 type TsValueV2 struct {
-	Value     interface{} `json:"v"`
-	Timestamp AVTime      `json:"ts"`
+	Value     any    `json:"v"`
+	Timestamp AVTime `json:"ts"`
 }
 
 // GetLatestDataV2 returns the latests data points on a device, without querying it. You can
@@ -426,16 +426,16 @@ func (av *AirVantage) GetLatestDataV2(systemUID, dataIDs string) (map[string][]T
 
 type UnityConf struct {
 	Current struct {
-		Value     interface{} `json:"value"`
-		Timestamp AVTime      `json:"ts"`
+		Value     any    `json:"value"`
+		Timestamp AVTime `json:"ts"`
 	} `json:"current"`
 	Action struct {
-		OperationID string      `json:"operationId"`
-		TaskID      string      `json:"taskId"`
-		Value       interface{} `json:"value"`
-		ValueType   string      `json:"valueType"`
-		Timestamp   AVTime      `json:"ts"`
-		Status      string      `json:"status"`
+		OperationID string `json:"operationId"`
+		TaskID      string `json:"taskId"`
+		Value       any    `json:"value"`
+		ValueType   string `json:"valueType"`
+		Timestamp   AVTime `json:"ts"`
+		Status      string `json:"status"`
 	} `json:"action"`
 }
 
@@ -768,11 +768,11 @@ func (av *AirVantage) CreateDataset(name string, description string, configurati
 }
 
 // ApplySettings launch an operation to write/delete the given settings on the system
-func (av *AirVantage) ApplySettings(settings map[string]interface{}, delete []string, protocol, systemUID string) (string, error) {
+func (av *AirVantage) ApplySettings(settings map[string]any, delete []string, protocol, systemUID string) (string, error) {
 
 	type Setting struct {
-		Key   string      `json:"key"`
-		Value interface{} `json:"value"`
+		Key   string `json:"key"`
+		Value any    `json:"value"`
 	}
 	type jsonBody struct {
 		Systems struct {
@@ -823,15 +823,15 @@ func (av *AirVantage) ApplySettings(settings map[string]interface{}, delete []st
 }
 
 // SendCommand launch an operation to run the given command and parameters on the system
-func (av *AirVantage) SendCommand(commandID string, parameters map[string]interface{}, protocol, systemUID string) (string, error) {
+func (av *AirVantage) SendCommand(commandID string, parameters map[string]any, protocol, systemUID string) (string, error) {
 
 	type jsonBody struct {
 		Systems struct {
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
-		CommandID  string                 `json:"commandId"`
-		Parameters map[string]interface{} `json:"parameters"`
-		Protocol   string                 `json:"protocol"`
+		CommandID  string         `json:"commandId"`
+		Parameters map[string]any `json:"parameters"`
+		Protocol   string         `json:"protocol"`
 	}
 	var body jsonBody
 	body.Systems.UIDs = []string{systemUID}

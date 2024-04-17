@@ -74,12 +74,12 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 }
 
 // get with smart URL formatting (API v1)
-func (av *AirVantage) get(format string, a ...interface{}) (*http.Response, error) {
+func (av *AirVantage) get(format string, a ...any) (*http.Response, error) {
 	return av.client.Get(av.URL(format, a...))
 }
 
 // get with smart URL formatting (API v2)
-func (av *AirVantage) getV2(format string, a ...interface{}) (*http.Response, error) {
+func (av *AirVantage) getV2(format string, a ...any) (*http.Response, error) {
 	return av.client.Get(av.URLv2(format, a...))
 }
 
@@ -102,7 +102,7 @@ type apiError struct {
 
 // parseResponse is the standard way to handle HTTP responses from AirVantage.
 // respStruct must be a pointer to a struct where the JSON will be deserialized.
-func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{}) error {
+func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
 	defer resp.Body.Close()
 
 	if err := av.parseError(resp); err != nil {
@@ -133,7 +133,7 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{})
 // parseResponseSystemSecurityInfo is similar to parseResponse
 // since the response is Java object serialized we have to remove these references
 // respStruct must be a pointer to a struct where the JSON will be deserialized.
-func (av *AirVantage) parseResponseSystemSecurityInfo(resp *http.Response, respStruct interface{}) error {
+func (av *AirVantage) parseResponseSystemSecurityInfo(resp *http.Response, respStruct any) error {
 	defer resp.Body.Close()
 
 	if err := av.parseError(resp); err != nil {
@@ -153,7 +153,7 @@ func (av *AirVantage) parseResponseSystemSecurityInfo(resp *http.Response, respS
 	}
 
 	// use a regexp to remove the Java object reference from the response
-	// it's much easier to do that rather than parsing json into a []interface{}
+	// it's much easier to do that rather than parsing json into a []any
 	reg := regexp.MustCompile(javaObjectNamespace)
 	jsonFiltered := reg.ReplaceAllString(string(body), "")
 
@@ -202,7 +202,7 @@ func (av *AirVantage) SetTimeout(timeout time.Duration) {
 }
 
 // URL builds a URL with the right host and prefix for API calls (API v1)
-func (av *AirVantage) URL(path string, a ...interface{}) string {
+func (av *AirVantage) URL(path string, a ...any) string {
 	v := url.Values{}
 
 	if av.CompanyUID != "" {
@@ -221,7 +221,7 @@ func (av *AirVantage) URL(path string, a ...interface{}) string {
 }
 
 // URLv2 builds a URL with the right host and prefix for API calls (api/v2 prefix)
-func (av *AirVantage) URLv2(path string, a ...interface{}) string {
+func (av *AirVantage) URLv2(path string, a ...any) string {
 	v := url.Values{}
 
 	if av.CompanyUID != "" {
