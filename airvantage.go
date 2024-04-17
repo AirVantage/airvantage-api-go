@@ -6,18 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
 )
 
-const defaultTimeout = 5 * time.Second
+const (
+	defaultTimeout = 5 * time.Second
+)
 
 var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
 
@@ -70,12 +72,12 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 }
 
 // get with smart URL formatting (API v1)
-func (av *AirVantage) get(format string, a ...interface{}) (*http.Response, error) {
+func (av *AirVantage) get(format string, a ...any) (*http.Response, error) {
 	return av.client.Get(av.URL(format, a...))
 }
 
 // get with smart URL formatting (API v2)
-func (av *AirVantage) getV2(format string, a ...interface{}) (*http.Response, error) {
+func (av *AirVantage) getV2(format string, a ...any) (*http.Response, error) {
 	return av.client.Get(av.URLv2(format, a...))
 }
 
@@ -98,11 +100,71 @@ type apiError struct {
 
 // parseResponse is the standard way to handle HTTP responses from AirVantage.
 // respStruct must be a pointer to a struct where the JSON will be deserialized.
-func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{}) error {
+func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
 	defer resp.Body.Close()
 
+	if err := av.parseError(resp); err != nil {
+		return err
+	}
+
+	if respStruct == nil {
+		return fmt.Errorf("parsing type not set")
+	}
+
+	var payload io.Reader = resp.Body
+	if av.Debug {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
+		payload = bytes.NewReader(body)
+	}
+
+	if err := json.NewDecoder(payload).Decode(respStruct); err != nil {
+		return fmt.Errorf("unable to parse API response: %s", err)
+	}
+
+	return nil
+}
+
+// parseResponseSerializedJava is similar to parseResponse
+// but handle the response of serialized Java object (by removing references using regexp pattern)
+// respStruct must be a pointer to a struct where the JSON will be deserialized.
+func (av *AirVantage) parseResponseSerializedJava(resp *http.Response, respStruct any, pattern string) error {
+	defer resp.Body.Close()
+
+	if err := av.parseError(resp); err != nil {
+		return err
+	}
+
+	if respStruct == nil {
+		return fmt.Errorf("parsing type not set")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if av.Debug {
+		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
+	}
+
+	// use a regexp to remove the Java object reference from the response
+	// it's much easier to do that rather than parsing json into a []any
+	reg := regexp.MustCompile(pattern)
+	jsonFiltered := reg.ReplaceAllString(string(body), "")
+
+	if err := json.Unmarshal([]byte(jsonFiltered), &respStruct); err != nil {
+		return fmt.Errorf("unable to parse API response: %s", err)
+	}
+
+	return nil
+}
+
+func (av *AirVantage) parseError(resp *http.Response) error {
 	if resp.StatusCode > 299 {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -124,25 +186,6 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct interface{})
 			return avError(resp.Request.URL.Path, apierror.Error, apierror.ErrorParameters)
 		}
 	}
-
-	if respStruct == nil {
-		return nil
-	}
-
-	var payload io.Reader = resp.Body
-	if av.Debug {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
-		payload = bytes.NewReader(body)
-	}
-
-	if err := json.NewDecoder(payload).Decode(respStruct); err != nil {
-		return fmt.Errorf("unable to parse API response: %s", err)
-	}
-
 	return nil
 }
 
@@ -157,7 +200,7 @@ func (av *AirVantage) SetTimeout(timeout time.Duration) {
 }
 
 // URL builds a URL with the right host and prefix for API calls (API v1)
-func (av *AirVantage) URL(path string, a ...interface{}) string {
+func (av *AirVantage) URL(path string, a ...any) string {
 	v := url.Values{}
 
 	if av.CompanyUID != "" {
@@ -176,7 +219,7 @@ func (av *AirVantage) URL(path string, a ...interface{}) string {
 }
 
 // URLv2 builds a URL with the right host and prefix for API calls (api/v2 prefix)
-func (av *AirVantage) URLv2(path string, a ...interface{}) string {
+func (av *AirVantage) URLv2(path string, a ...any) string {
 	v := url.Values{}
 
 	if av.CompanyUID != "" {

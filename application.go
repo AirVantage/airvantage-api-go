@@ -7,20 +7,20 @@ import (
 
 // An Application descriptor.
 type Application struct {
-	UID                string                 `json:"uid,omitempty"`
-	Name               string                 `json:"name,omitempty"`
-	Revision           string                 `json:"revision,omitempty"`
-	Type               string                 `json:"type,omitempty"`
-	Category           string                 `json:"category,omitempty"`
-	State              string                 `json:"state,omitempty"`
-	Released           AVTime                 `json:"released,omitempty"`
-	Published          AVTime                 `json:"published,omitempty"`
-	Deprecated         AVTime                 `json:"deprecated,omitempty"`
-	IsReference        bool                   `json:"isReference,omitempty"`
-	IsPublic           bool                   `json:"isPublic,omitempty"`
-	Labels             []string               `json:"labels,omitempty"`
-	ApplicationManager string                 `json:"applicationManager,omitempty"`
-	Owner              map[string]interface{} `json:"owner,omitempty"` // TODO: real impl.
+	UID                string         `json:"uid,omitempty"`
+	Name               string         `json:"name,omitempty"`
+	Revision           string         `json:"revision,omitempty"`
+	Type               string         `json:"type,omitempty"`
+	Category           string         `json:"category,omitempty"`
+	State              string         `json:"state,omitempty"`
+	Released           AVTime         `json:"released,omitempty"`
+	Published          AVTime         `json:"published,omitempty"`
+	Deprecated         AVTime         `json:"deprecated,omitempty"`
+	IsReference        bool           `json:"isReference,omitempty"`
+	IsPublic           bool           `json:"isPublic,omitempty"`
+	Labels             []string       `json:"labels,omitempty"`
+	ApplicationManager string         `json:"applicationManager,omitempty"`
+	Owner              map[string]any `json:"owner,omitempty"` // TODO: real impl.
 }
 
 // FindAppUID looks for an application using its name and revision,
