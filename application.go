@@ -70,8 +70,9 @@ func (av *AirVantage) FindAppByTypeRev(apptype, apprev string) (*Application, er
 	}
 
 	if len(res.Items) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("no application with matching type '%s' & revision '%s'", apptype, apprev)
 	}
+
 	return &res.Items[0], nil
 }
 
