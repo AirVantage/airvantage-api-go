@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/url"
 	"strings"
@@ -84,7 +85,7 @@ func (av *AirVantage) AwaitOperation(opUID string, timeout time.Duration) (*Oper
 			return nil, err
 		}
 
-		av.log.Debug("Waiting Operation", "uid", op)
+		slog.Debug("Waiting Operation", "uid", op)
 
 		if op.State == "FINISHED" {
 			return op, nil
