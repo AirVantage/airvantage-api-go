@@ -84,9 +84,7 @@ func (av *AirVantage) AwaitOperation(opUID string, timeout time.Duration) (*Oper
 			return nil, err
 		}
 
-		if av.Debug {
-			av.log.Printf("DBG operation %+v\n", op)
-		}
+		av.log.Debug("Waiting Operation", "uid", op)
 
 		if op.State == "FINISHED" {
 			return op, nil

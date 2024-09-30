@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,7 +21,10 @@ const (
 	defaultTimeout = 5 * time.Second
 )
 
-var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
+var defaultLogger = slog.New(
+	NewSimpleLogHandler(
+		os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+)
 
 // AirVantage API client using oAuth2
 type AirVantage struct {
@@ -30,7 +33,7 @@ type AirVantage struct {
 	Debug      bool
 	baseURLv1  *url.URL
 	baseURLv2  *url.URL
-	log        *log.Logger
+	log        *slog.Logger
 }
 
 // NewClient logins to AirVantage an returns a new API client.
@@ -117,7 +120,8 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
 		if err != nil {
 			return err
 		}
-		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
+		av.log.Debug("Parsing response", "path", resp.Request.URL, "content", string(body))
+
 		payload = bytes.NewReader(body)
 	}
 
@@ -146,9 +150,7 @@ func (av *AirVantage) parseResponseSerializedJava(resp *http.Response, respStruc
 	if err != nil {
 		return err
 	}
-	if av.Debug {
-		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
-	}
+	av.log.Debug("Parsing serialized java response", "path", resp.Request.URL, "content", string(body))
 
 	// use a regexp to remove the Java object reference from the response
 	// it's much easier to do that rather than parsing json into a []any
@@ -168,10 +170,7 @@ func (av *AirVantage) parseError(resp *http.Response) error {
 		if err != nil {
 			return err
 		}
-
-		if av.Debug {
-			av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
-		}
+		av.log.Debug("Parsing error", "path", resp.Request.URL, "content", string(body))
 
 		if len(body) == 0 {
 			return fmt.Errorf("error %d %s", resp.StatusCode, resp.Status)
@@ -190,7 +189,7 @@ func (av *AirVantage) parseError(resp *http.Response) error {
 }
 
 // SetLogger allows you to set a custom logger instead of Go's default.
-func (av *AirVantage) SetLogger(logger *log.Logger) {
+func (av *AirVantage) SetLogger(logger *slog.Logger) {
 	av.log = logger
 }
 
