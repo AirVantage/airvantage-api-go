@@ -6,10 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -21,8 +20,6 @@ const (
 	defaultTimeout = 5 * time.Second
 )
 
-var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
-
 // AirVantage API client using oAuth2
 type AirVantage struct {
 	client     *http.Client
@@ -30,7 +27,6 @@ type AirVantage struct {
 	Debug      bool
 	baseURLv1  *url.URL
 	baseURLv2  *url.URL
-	log        *log.Logger
 }
 
 // NewClient logins to AirVantage an returns a new API client.
@@ -57,6 +53,7 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, http.Client{Timeout: defaultTimeout})
 
+	slog.Info("Fetching OAuth token")
 	token, err := conf.PasswordCredentialsToken(ctx, login, password)
 	if err != nil {
 		return nil, err
@@ -66,7 +63,6 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 			client:    conf.Client(ctx, token),
 			baseURLv1: &url.URL{Host: host, Scheme: scheme, Path: "/api/v1/"},
 			baseURLv2: &url.URL{Host: host, Scheme: scheme, Path: "/api/v2/"},
-			log:       defaultLogger,
 		},
 		nil
 }
@@ -117,7 +113,8 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
 		if err != nil {
 			return err
 		}
-		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
+		slog.Debug("Parsing response", "path", resp.Request.URL.String(), "content", string(body))
+
 		payload = bytes.NewReader(body)
 	}
 
@@ -146,9 +143,7 @@ func (av *AirVantage) parseResponseSerializedJava(resp *http.Response, respStruc
 	if err != nil {
 		return err
 	}
-	if av.Debug {
-		av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
-	}
+	slog.Debug("Parsing serialized java response", "path", resp.Request.URL.String(), "content", string(body))
 
 	// use a regexp to remove the Java object reference from the response
 	// it's much easier to do that rather than parsing json into a []any
@@ -168,10 +163,7 @@ func (av *AirVantage) parseError(resp *http.Response) error {
 		if err != nil {
 			return err
 		}
-
-		if av.Debug {
-			av.log.Printf("Path: %s\nContent: %s\n", resp.Request.URL, string(body))
-		}
+		slog.Debug("Parsing error", "path", resp.Request.URL.String(), "content", string(body))
 
 		if len(body) == 0 {
 			return fmt.Errorf("error %d %s", resp.StatusCode, resp.Status)
@@ -187,11 +179,6 @@ func (av *AirVantage) parseError(resp *http.Response) error {
 		}
 	}
 	return nil
-}
-
-// SetLogger allows you to set a custom logger instead of Go's default.
-func (av *AirVantage) SetLogger(logger *log.Logger) {
-	av.log = logger
 }
 
 // SetTimeout sets the request timeout of the HTTP client.
