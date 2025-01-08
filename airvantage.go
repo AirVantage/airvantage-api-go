@@ -96,7 +96,7 @@ type apiError struct {
 
 // parseResponse is the standard way to handle HTTP responses from AirVantage.
 // respStruct must be a pointer to a struct where the JSON will be deserialized.
-func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
+func (av *AirVantage) parseResponse(resp *http.Response, respStruct any, maskedUrlParams ...string) error {
 	defer resp.Body.Close()
 
 	if err := av.parseError(resp); err != nil {
@@ -113,7 +113,7 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
 		if err != nil {
 			return err
 		}
-		slog.Debug("Parsing response", "path", resp.Request.URL.String(), "content", string(body))
+		slog.Debug("Parsing response", "path", maskUrlParams(resp.Request.URL.String(), maskedUrlParams), "content", string(body))
 
 		payload = bytes.NewReader(body)
 	}
@@ -128,7 +128,7 @@ func (av *AirVantage) parseResponse(resp *http.Response, respStruct any) error {
 // parseResponseSerializedJava is similar to parseResponse
 // but handle the response of serialized Java object (by removing references using regexp pattern)
 // respStruct must be a pointer to a struct where the JSON will be deserialized.
-func (av *AirVantage) parseResponseSerializedJava(resp *http.Response, respStruct any, pattern string) error {
+func (av *AirVantage) parseResponseSerializedJava(resp *http.Response, respStruct any, pattern string, maskedUrlParams ...string) error {
 	defer resp.Body.Close()
 
 	if err := av.parseError(resp); err != nil {
@@ -143,7 +143,7 @@ func (av *AirVantage) parseResponseSerializedJava(resp *http.Response, respStruc
 	if err != nil {
 		return err
 	}
-	slog.Debug("Parsing serialized java response", "path", resp.Request.URL.String(), "content", string(body))
+	slog.Debug("Parsing serialized java response", "path", maskUrlParams(resp.Request.URL.String(), maskedUrlParams), "content", string(body))
 
 	// use a regexp to remove the Java object reference from the response
 	// it's much easier to do that rather than parsing json into a []any
@@ -222,4 +222,15 @@ func (av *AirVantage) URLv2(path string, a ...any) string {
 	}
 
 	return av.baseURLv2.ResolveReference(&url.URL{Path: path, RawQuery: v.Encode()}).String()
+}
+
+// mask the value of specified query string parameters
+func maskUrlParams(url string, maskedParams []string) string {
+	for _, param := range maskedParams {
+		pattern := `([?&]` + param + `=)([^&]*)`
+		var re = regexp.MustCompile(pattern)
+		url = re.ReplaceAllString(url, "${1}***")
+	}
+
+	return url
 }
