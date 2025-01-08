@@ -91,7 +91,7 @@ func (av *AirVantage) AwaitOperation(opUID string, timeout time.Duration) (*Oper
 			return op, nil
 		}
 
-		if time.Now().Sub(start) > timeout {
+		if time.Since(start) > timeout {
 			return op, ErrWaitFinishedOperationTimeout
 		}
 
@@ -166,7 +166,7 @@ func (av *AirVantage) GetOperationUnsignedPayload(uid string) (string, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return "", errors.New(fmt.Sprintf("Invalid response when retrieveing unsignedpayload: %+v", resp))
+		return "", fmt.Errorf("invalid response when retrieveing unsignedpayload: %+v", resp)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -210,7 +210,7 @@ func (av *AirVantage) ApproveOperation(opUID, base64Signature, algorithm string,
 
 	resp, err := av.client.Post(av.URL(fmt.Sprintf("operations/%s/approve", opUID)), w.FormDataContentType(), &b)
 	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("Invalid response for approve API call: %+v", resp))
+		return fmt.Errorf("invalid response for approve API call: %+v", resp)
 	}
 	return err
 }

@@ -48,6 +48,8 @@ type System struct {
 }
 
 // A Datapoint retrieved from a System.
+//
+//lint:ignore U1000 used in DataAggregate
 type Datapoint struct {
 	ts AVTime
 	v  any
