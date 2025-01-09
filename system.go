@@ -48,6 +48,8 @@ type System struct {
 }
 
 // A Datapoint retrieved from a System.
+//
+//lint:ignore U1000 used in DataAggregate
 type Datapoint struct {
 	ts AVTime
 	v  any
@@ -344,7 +346,7 @@ func (av *AirVantage) GetSystemSecurityInfo(authkey string, systemIdentifier str
 
 	// get the raw response, which is java object serialization
 	res := []SystemSecurityInfo{}
-	if err = av.parseResponseSerializedJava(resp, &res, javaObjectNamespaceSierra); err != nil {
+	if err = av.parseResponseSerializedJava(resp, &res, javaObjectNamespaceSierra, "AUTHKEY"); err != nil {
 		return nil, err
 	}
 
