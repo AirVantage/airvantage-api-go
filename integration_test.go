@@ -14,19 +14,15 @@ const (
 type AvCredentials struct {
 	apiKey    string
 	apiSecret string
-	login     string
-	password  string
 }
 
 func getTestingCreds() (AvCredentials, error) {
 	creds := AvCredentials{
 		apiKey:    os.Getenv("API_KEY"),
 		apiSecret: os.Getenv("API_SECRET"),
-		login:     os.Getenv("AV_LOGIN"),
-		password:  os.Getenv("AV_PASSWORD"),
 	}
 
-	if len(creds.apiKey) == 0 || len(creds.apiSecret) == 0 || len(creds.login) == 0 || len(creds.password) == 0 {
+	if len(creds.apiKey) == 0 || len(creds.apiSecret) == 0 {
 		return creds, fmt.Errorf("missing credentials for integration tests")
 	}
 
@@ -45,8 +41,6 @@ func TestSystem(t *testing.T) {
 		TestingHost,
 		creds.apiKey,
 		creds.apiSecret,
-		creds.login,
-		creds.password,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -89,8 +83,6 @@ func TestFindAppByTypeRev(t *testing.T) {
 		TestingHost,
 		creds.apiKey,
 		creds.apiSecret,
-		creds.login,
-		creds.password,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -122,8 +114,6 @@ func TestInstallApp(t *testing.T) {
 		TestingHost,
 		creds.apiKey,
 		creds.apiSecret,
-		creds.login,
-		creds.password,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -158,8 +148,6 @@ func TestGetOperation(t *testing.T) {
 		TestingHost,
 		creds.apiKey,
 		creds.apiSecret,
-		creds.login,
-		creds.password,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -188,8 +176,6 @@ func TestGetLatestData(t *testing.T) {
 		TestingHost,
 		creds.apiKey,
 		creds.apiSecret,
-		creds.login,
-		creds.password,
 	)
 	if err != nil {
 		t.Fatal(err)

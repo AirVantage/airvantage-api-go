@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 const (
@@ -30,7 +31,7 @@ type AirVantage struct {
 }
 
 // NewClient logins to AirVantage an returns a new API client.
-func NewClient(host, clientID, clientSecret, login, password string) (*AirVantage, error) {
+func NewClient(host, clientID, clientSecret string) (*AirVantage, error) {
 
 	scheme := "https"
 	if strings.HasPrefix(host, "http://") {
@@ -42,25 +43,16 @@ func NewClient(host, clientID, clientSecret, login, password string) (*AirVantag
 
 	oauthURL := &url.URL{Host: host, Scheme: scheme, Path: "/api/oauth/"}
 
-	conf := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Endpoint: oauth2.Endpoint{
-			TokenURL: oauthURL.ResolveReference(&url.URL{Path: "token"}).String(),
-			AuthURL:  oauthURL.ResolveReference(&url.URL{Path: "auth"}).String(),
-		},
-	}
+    conf := &clientcredentials.Config{
+        ClientID:     clientID,
+        ClientSecret: clientSecret,
+        TokenURL: oauthURL.ResolveReference(&url.URL{Path: "token"}).String(),
+    }
 
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, http.Client{Timeout: defaultTimeout})
 
-	slog.Info("Fetching OAuth token")
-	token, err := conf.PasswordCredentialsToken(ctx, login, password)
-	if err != nil {
-		return nil, err
-	}
-
 	return &AirVantage{
-			client:    conf.Client(ctx, token),
+			client:    conf.Client(ctx),
 			baseURLv1: &url.URL{Host: host, Scheme: scheme, Path: "/api/v1/"},
 			baseURLv2: &url.URL{Host: host, Scheme: scheme, Path: "/api/v2/"},
 		},
