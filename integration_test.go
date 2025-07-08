@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	TestingHost = "qa.airvantage.io"
+	TestingHost    string = "qa.airvantage.io"
+	companyUID     string = "8f70416f52c04483a74e4baf12496f0e"
 )
 
 type AvCredentials struct {
@@ -32,6 +33,13 @@ func getTestingCreds() (AvCredentials, error) {
 // The tests need to be sequential.
 
 func TestSystem(t *testing.T) {
+    const (
+    	// system parameters
+    	system      string = "api test"
+    	gatewayIMEI string = "118218318418"
+    	gatewayType string = "api-gateway"
+    )
+
 	creds, err := getTestingCreds()
 	if err != nil {
 		t.Fatal(err)
@@ -50,10 +58,10 @@ func TestSystem(t *testing.T) {
 
 	// Create a new System
 	sysSpec := System{
-		Name: "api test",
+		Name: system,
 		Gateway: &Gateway{
-			IMEI: "118218318418",
-			Type: "api-gateway",
+			IMEI: gatewayIMEI,
+			Type: gatewayType,
 		},
 	}
 	sys, err := av.CreateSystem(&sysSpec)
@@ -74,6 +82,12 @@ func TestSystem(t *testing.T) {
 }
 
 func TestFindAppByTypeRev(t *testing.T) {
+     const (
+        // application parameters
+        appType     string = "test-mqtt"
+        appRev      string = "0.1"
+     )
+
 	creds, err := getTestingCreds()
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +104,7 @@ func TestFindAppByTypeRev(t *testing.T) {
 
 	av.Debug = true
 
-	app, err := av.FindAppByTypeRev("test-mqtt", "0.1")
+	app, err := av.FindAppByTypeRev(appType, appRev)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +117,15 @@ func TestFindAppByTypeRev(t *testing.T) {
 }
 
 func TestInstallApp(t *testing.T) {
-	t.SkipNow()
+    t.SkipNow()
+
+    const (
+        // application parameters
+        appUID      string = "c634dd2234714578ad286c04e038f5b2"
+
+        // system parameters
+        systemUID   string = "42be9f3a82d94da5bc3d44af67138092"
+    )
 
 	creds, err := getTestingCreds()
 	if err != nil {
@@ -120,9 +142,9 @@ func TestInstallApp(t *testing.T) {
 	}
 
 	av.Debug = true
-	av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
+	av.CompanyUID = companyUID
 
-	opUID, err := av.InstallApplication("c634dd2234714578ad286c04e038f5b2", "42be9f3a82d94da5bc3d44af67138092")
+	opUID, err := av.InstallApplication(appUID, systemUID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,6 +161,10 @@ func TestInstallApp(t *testing.T) {
 func TestGetOperation(t *testing.T) {
 	t.SkipNow()
 
+    const (
+        opUID       string = "46be2ae142dc4fd993819a38b2937e2d"
+    )
+
 	creds, err := getTestingCreds()
 	if err != nil {
 		t.Fatal(err)
@@ -154,9 +180,9 @@ func TestGetOperation(t *testing.T) {
 	}
 
 	av.Debug = true
-	//av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
+	//av.CompanyUID = companyUID
 
-	op, err := av.GetOperation("46be2ae142dc4fd993819a38b2937e2d")
+	op, err := av.GetOperation(opUID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,6 +193,11 @@ func TestGetOperation(t *testing.T) {
 func TestGetLatestData(t *testing.T) {
 	t.SkipNow()
 
+	const (
+        systemUID      string = "5bdacf411b5d4603a6d13f099a9ca5ba"
+        dataIDs        string = "DM.SW.VER"
+    )
+
 	creds, err := getTestingCreds()
 	if err != nil {
 		t.Fatal(err)
@@ -182,9 +213,9 @@ func TestGetLatestData(t *testing.T) {
 	}
 
 	av.Debug = true
-	//av.CompanyUID = "8f70416f52c04483a74e4baf12496f0e"
+	//av.CompanyUID = companyUID
 
-	res, err := av.GetLatestData("5bdacf411b5d4603a6d13f099a9ca5ba", "DM.SW.VER")
+	res, err := av.GetLatestData(systemUID, dataIDs)
 	if err != nil {
 		t.Fatal(err)
 	}
