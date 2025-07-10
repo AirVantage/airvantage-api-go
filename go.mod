@@ -2,6 +2,4 @@ module github.com/AirVantage/airvantage-api-go
 
 go 1.24
 
-toolchain go1.24.4
-
 require golang.org/x/oauth2 v0.30.0
