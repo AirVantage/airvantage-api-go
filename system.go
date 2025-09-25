@@ -92,10 +92,10 @@ func (av *AirVantage) ApplyTemplateByUID(templateName string, systemUIDs []strin
 		return nil, err
 	}
 
-	url := av.URL("/operations/systems/settings")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("/operations/systems/settings")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +124,10 @@ func (av *AirVantage) ApplyTemplateByLabels(templateName string, labels []string
 		return nil, err
 	}
 
-	url := av.URL("/operations/systems/settings")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("/operations/systems/settings")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return nil, err
 	}
@@ -145,14 +145,14 @@ func (av *AirVantage) ApplyTemplateByLabels(templateName string, labels []string
 // Required fields in System: name, gateway
 func (av *AirVantage) CreateSystem(system *System) (*System, error) {
 
-	url := av.URL("systems")
+	requestURL := av.URL("systems")
 	js, err := json.Marshal(system)
 	if err != nil {
 		return nil, err
 	}
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (av *AirVantage) CreateSystem(system *System) (*System, error) {
 // ActivateSystem activates a system
 func (av *AirVantage) ActivateSystem(system *System) (string, error) {
 
-	url := av.URL("operations/systems/activate")
+	requestURL := av.URL("operations/systems/activate")
 	selection := struct {
 		Systems struct {
 			UIDs []string `json:"uids"`
@@ -180,9 +180,9 @@ func (av *AirVantage) ActivateSystem(system *System) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -197,14 +197,14 @@ func (av *AirVantage) ActivateSystem(system *System) (string, error) {
 // EditSystem updates the system
 func (av *AirVantage) EditSystem(uid string, system *System) (*System, error) {
 
-	url := av.URL("systems/" + uid)
+	requestURL := av.URL("systems/" + uid)
 	js, err := json.Marshal(system)
 	if err != nil {
 		return nil, err
 	}
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	req, err := http.NewRequest("PUT", url, bytes.NewReader(js))
+	req, err := http.NewRequest("PUT", requestURL, bytes.NewReader(js))
 	if err != nil {
 		return nil, err
 	}
@@ -225,10 +225,10 @@ func (av *AirVantage) EditSystem(uid string, system *System) (*System, error) {
 // DeleteSystem deletes a system and optionally its gateway and subscription.
 func (av *AirVantage) DeleteSystem(uid string, deleteGateway, deleteSubscription bool) error {
 
-	url := av.URL("systems/"+uid, "deleteGateway", deleteGateway, "deleteSubscription", deleteSubscription)
-	slog.Debug("HTTP DELETE", "url", url)
+	requestURL := av.URL("systems/"+uid, "deleteGateway", deleteGateway, "deleteSubscription", deleteSubscription)
+	slog.Debug("HTTP DELETE", "url", requestURL)
 
-	req, err := http.NewRequest("DELETE", url, nil)
+	req, err := http.NewRequest("DELETE", requestURL, nil)
 	if err != nil {
 		return err
 	}
@@ -238,7 +238,7 @@ func (av *AirVantage) DeleteSystem(uid string, deleteGateway, deleteSubscription
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("%s: %s", url, resp.Status)
+		return fmt.Errorf("%s: %s", requestURL, resp.Status)
 	}
 
 	return nil
@@ -334,9 +334,9 @@ func (av *AirVantage) FindSystemByUID(UID string) (*System, error) {
 // - protocol: communication type MSCI, OMADM, AWTDA2, M3DA, REST, MQTT, LWM2M
 func (av *AirVantage) GetSystemSecurityInfo(authkey string, systemIdentifier string, secuType string, protocol string) (*SystemSecurityInfo, error) {
 
-	url := fmt.Sprintf("%s://%s/device/internal/securityinfo?id=%s&type=%s&protocol=%s&AUTHKEY=%s",
+	requestURL := fmt.Sprintf("%s://%s/device/internal/securityinfo?id=%s&type=%s&protocol=%s&AUTHKEY=%s",
 		av.baseURLv1.Scheme, av.baseURLv1.Host, systemIdentifier, secuType, protocol, authkey)
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", requestURL, nil)
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := av.client.Do(req)
@@ -479,10 +479,10 @@ func (av *AirVantage) DismissUnityCommand(systemUID string, commandID string) er
 		return err
 	}
 
-	url := av.URL("unity/" + systemUID + "/command/dismisserror")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("unity/" + systemUID + "/command/dismisserror")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	_, err = av.client.Post(url, "application/json", bytes.NewReader(js))
+	_, err = av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return err
 	}
@@ -595,10 +595,10 @@ func (av *AirVantage) InstallApplication(appUID, systemUID string) (string, erro
 		return "", err
 	}
 
-	url := av.URL("operations/systems/applications/install")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("operations/systems/applications/install")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -632,10 +632,10 @@ func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID st
 		return "", err
 	}
 
-	url := av.URL("operations/systems/data/retrieve")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("operations/systems/data/retrieve")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -694,10 +694,10 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 		return "", err
 	}
 
-	ccUrl := av.URL("operations/systems/configure")
-	slog.Debug("HTTP POST", "url", ccUrl, "json", string(js))
+	requestURL := av.URL("operations/systems/configure")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(ccUrl, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -722,10 +722,10 @@ func (av *AirVantage) CreateDataset(name string, description string, configurati
 		return nil, err
 	}
 
-	ccUrl := av.URL("/api/v2/datasets")
-	slog.Debug("HTTP POST", "url", ccUrl, "json", string(js))
+	requestURL := av.URL("/api/v2/datasets")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(ccUrl, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return nil, err
 	}
@@ -777,10 +777,10 @@ func (av *AirVantage) ApplySettings(settings map[string]any, delete []string, pr
 		return "", err
 	}
 
-	url := av.URL("operations/systems/settings")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("operations/systems/settings")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -817,10 +817,10 @@ func (av *AirVantage) SendCommand(commandID string, parameters map[string]any, p
 		return "", err
 	}
 
-	url := av.URL("operations/systems/command")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("operations/systems/command")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -852,10 +852,10 @@ func (av *AirVantage) SendFile(fileID, target, systemUID string) (string, error)
 		return "", err
 	}
 
-	url := av.URL("operations/systems/file/send")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("operations/systems/file/send")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -888,10 +888,10 @@ func (av *AirVantage) Reboot(action string, systemUID string) (string, error) {
 		return "", err
 	}
 
-	url := av.URL("operations/systems/reboot")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("operations/systems/reboot")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
@@ -924,10 +924,49 @@ func (av *AirVantage) Reset(action string, systemUID string) (string, error) {
 		return "", err
 	}
 
-	url := av.URL("operations/systems/reset")
-	slog.Debug("HTTP POST", "url", url, "json", string(js))
+	requestURL := av.URL("operations/systems/reset")
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
-	resp, err := av.client.Post(url, "application/json", bytes.NewReader(js))
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
+	if err != nil {
+		return "", err
+	}
+
+	res := struct{ Operation string }{}
+	if err = av.parseResponse(resp, &res); err != nil {
+		return "", err
+	}
+	return string(res.Operation), nil
+}
+
+// SendSms launches an operation to send a sms to the system
+func (av *AirVantage) SendSms(smsContent, systemUID string, companyUID ...string) (string, error) {
+
+	type jsonBody struct {
+		Systems struct {
+			UIDs []string `json:"uids"`
+		} `json:"systems"`
+		Content string `json:"content"`
+	}
+	var body jsonBody
+	body.Systems.UIDs = []string{systemUID}
+	body.Content = smsContent
+
+	js, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+
+	requestURL := av.URL("operations/systems/sms")
+
+	// Add company query parameter if companyUID is provided
+	if len(companyUID) > 0 && companyUID[0] != "" {
+		requestURL += "?company=" + url.QueryEscape(companyUID[0])
+	}
+
+	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
+
+	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
 	if err != nil {
 		return "", err
 	}
