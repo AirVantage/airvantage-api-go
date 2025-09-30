@@ -940,7 +940,7 @@ func (av *AirVantage) Reset(action string, systemUID string) (string, error) {
 }
 
 // SendSms launches an operation to send a sms to the system
-func (av *AirVantage) SendSms(smsContent, systemUID string, companyUID ...string) (string, error) {
+func (av *AirVantage) SendSms(smsContent, systemUID string) (string, error) {
 
 	type jsonBody struct {
 		Systems struct {
@@ -958,12 +958,6 @@ func (av *AirVantage) SendSms(smsContent, systemUID string, companyUID ...string
 	}
 
 	requestURL := av.URL("operations/systems/sms")
-
-	// Add company query parameter if companyUID is provided
-	if len(companyUID) > 0 && companyUID[0] != "" {
-		requestURL += "?company=" + url.QueryEscape(companyUID[0])
-	}
-
 	slog.Debug("HTTP POST", "url", requestURL, "json", string(js))
 
 	resp, err := av.client.Post(requestURL, "application/json", bytes.NewReader(js))
@@ -975,5 +969,6 @@ func (av *AirVantage) SendSms(smsContent, systemUID string, companyUID ...string
 	if err = av.parseResponse(resp, &res); err != nil {
 		return "", err
 	}
+
 	return string(res.Operation), nil
 }
