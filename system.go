@@ -651,23 +651,23 @@ func (av *AirVantage) RetrieveData(paths []string, protocol string, systemUID st
 func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srState string, srPeriod int, systemsUID []string, reports []AdvancedReports) (string, error) {
 
 	type HeartBeat struct {
-		State      string `json:"state"`
-		Period     int    `json:"period"`
+		State      string `json:"state,omitempty"`
+		Period     int    `json:"period,omitempty"`
 		ServerOnly bool   `json:"serverOnly"`
 	}
 
 	type StatusReport struct {
-		State  string `json:"state"`
-		Period int    `json:"period"`
+		State  string `json:"state,omitempty"`
+		Period int    `json:"period,omitempty"`
 	}
 
 	type jsonBody struct {
 		Systems struct {
 			UIDs []string `json:"uids"`
 		} `json:"systems"`
-		HeartBeat       HeartBeat         `json:"heartbeat"`
-		StatusReport    StatusReport      `json:"statusReport"`
-		AdvancedReports []AdvancedReports `json:"reports"`
+		HeartBeat       HeartBeat         `json:"heartbeat,omitzero"`
+		StatusReport    StatusReport      `json:"statusReport,omitzero"`
+		AdvancedReports []AdvancedReports `json:"reports,omitzero"`
 	}
 
 	var body jsonBody
@@ -676,6 +676,7 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 		if hbPeriod != 0 {
 			body.HeartBeat.State = hbState
 			body.HeartBeat.Period = hbPeriod
+			body.HeartBeat.ServerOnly = false
 		}
 
 		if srPeriod != 0 {
@@ -687,7 +688,10 @@ func (av *AirVantage) ConfigureCommunication(hbState string, hbPeriod int, srSta
 			body.AdvancedReports = reports
 		}
 	}
-	body.HeartBeat.ServerOnly = false
+
+	if body.HeartBeat.State == "" && body.StatusReport.State == "" && body.AdvancedReports == nil {
+		return "", fmt.Errorf("at list one key is required for ConfigureCommunication")
+	}
 
 	js, err := json.Marshal(&body)
 	if err != nil {
